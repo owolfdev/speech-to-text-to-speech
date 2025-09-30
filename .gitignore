@@ -1,5 +1,7 @@
 # See https://help.github.com/articles/ignoring-files/ for more about ignoring files.
 
+text-to-speech-for-video-app-d10d2fa62487.json
+
 # dependencies
 /node_modules
 /.pnp
