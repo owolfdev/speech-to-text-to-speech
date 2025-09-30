@@ -22,7 +22,7 @@ export async function POST(request: NextRequest) {
     const audioBytes = Buffer.from(audioData, "base64");
 
     // Determine encoding based on MIME type
-    let encoding: any = "WEBM_OPUS";
+    let encoding: "WEBM_OPUS" | "MP3" | "OGG_OPUS" = "WEBM_OPUS";
     let sampleRate = 48000;
 
     if (mimeType?.includes("mp4") || mimeType?.includes("m4a")) {

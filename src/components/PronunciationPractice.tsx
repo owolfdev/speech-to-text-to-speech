@@ -12,11 +12,7 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useAudioRecorder } from "@/hooks/useAudioRecorder";
-import {
-  frenchPhrases,
-  getRandomPhrase,
-  type FrenchPhrase,
-} from "@/data/french-phrases";
+import { getRandomPhrase, type FrenchPhrase } from "@/data/french-phrases";
 import { getPronunciationFeedback } from "@/lib/text-comparison";
 
 interface PronunciationResult {
@@ -55,6 +51,7 @@ export default function PronunciationPractice() {
   // Load a new phrase when component mounts or difficulty changes
   useEffect(() => {
     loadNewPhrase();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [difficulty]);
 
   const loadNewPhrase = () => {
@@ -64,13 +61,14 @@ export default function PronunciationPractice() {
     resetRecording();
   };
 
-  const handleStartRecording = async () => {
+  const handleStartRecording = async (): Promise<void> => {
     try {
       setPermissionError(null);
       await startRecording();
-    } catch (error: any) {
+    } catch (error) {
+      const err = error as Error;
       console.error("Failed to start recording:", error);
-      const errorMessage = error.message || "Failed to access microphone";
+      const errorMessage = err.message || "Failed to access microphone";
       setPermissionError(errorMessage);
 
       // Provide helpful error messages for mobile users
@@ -97,7 +95,7 @@ export default function PronunciationPractice() {
     stopRecording();
   };
 
-  const handleSubmitRecording = async () => {
+  const handleSubmitRecording = async (): Promise<void> => {
     if (!audioBlob || !currentPhrase) return;
 
     setIsProcessing(true);
