@@ -173,7 +173,8 @@ export function useAudioRecorder() {
   }, []);
 
   const convertToBase64 = useCallback(async (): Promise<string> => {
-    if (!state.audioBlob) {
+    const sourceBlob = state.audioBlob;
+    if (!sourceBlob) {
       throw new Error("No audio data available");
     }
 
@@ -186,8 +187,7 @@ export function useAudioRecorder() {
         resolve(base64Data);
       };
       reader.onerror = reject;
-      const blob: Blob = state.audioBlob;
-      reader.readAsDataURL(blob);
+      reader.readAsDataURL(sourceBlob);
     });
   }, [state.audioBlob]);
 
