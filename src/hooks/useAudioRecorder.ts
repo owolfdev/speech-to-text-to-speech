@@ -186,7 +186,8 @@ export function useAudioRecorder() {
         resolve(base64Data);
       };
       reader.onerror = reject;
-      reader.readAsDataURL(state.audioBlob);
+      const blob: Blob = state.audioBlob;
+      reader.readAsDataURL(blob);
     });
   }, [state.audioBlob]);
 
