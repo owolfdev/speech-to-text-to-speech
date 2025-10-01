@@ -33,6 +33,9 @@ export default function PronunciationPractice() {
   >("beginner");
 
   const [permissionError, setPermissionError] = useState<string | null>(null);
+  const [uploadedFile, setUploadedFile] = useState<File | null>(null);
+  const [uploadedAudioUrl, setUploadedAudioUrl] = useState<string | null>(null);
+  const [rawTranscription, setRawTranscription] = useState<string>("");
 
   const {
     isRecording,
@@ -93,6 +96,91 @@ export default function PronunciationPractice() {
 
   const handleStopRecording = () => {
     stopRecording();
+  };
+
+  const handleFileUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (file) {
+      setUploadedFile(file);
+      const url = URL.createObjectURL(file);
+      setUploadedAudioUrl(url);
+      setRawTranscription(""); // Clear previous transcription
+    }
+  };
+
+  const handleTestUploadedFile = async (): Promise<void> => {
+    if (!uploadedFile) return;
+
+    setIsProcessing(true);
+    setRawTranscription("");
+    try {
+      console.log("🎤 Starting file upload test...");
+      console.log("📁 File:", uploadedFile.name, "Type:", uploadedFile.type);
+
+      // Convert file to base64
+      const base64Audio = await new Promise<string>((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onloadend = () => {
+          const base64 = reader.result as string;
+          const base64Data = base64.split(",")[1];
+          console.log(
+            "✅ File converted to base64, length:",
+            base64Data.length
+          );
+          resolve(base64Data);
+        };
+        reader.onerror = reject;
+        reader.readAsDataURL(uploadedFile);
+      });
+
+      console.log("📤 Sending to API...");
+      // Send to speech-to-text API
+      const response = await fetch("/api/speech-to-text", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          audioData: base64Audio,
+          mimeType: uploadedFile.type,
+        }),
+      });
+
+      console.log("📥 Response status:", response.status);
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        console.error("❌ API Error:", errorData);
+        throw new Error(errorData.error || "Failed to process speech");
+      }
+
+      const responseData = await response.json();
+      console.log("📋 Full API Response:", responseData);
+
+      const { transcription } = responseData;
+      console.log("🗣️ Transcription:", transcription);
+
+      // Just display the raw transcription - no comparison
+      if (transcription) {
+        setRawTranscription(transcription);
+        console.log("✅ Transcription set successfully");
+      } else {
+        setRawTranscription(
+          "[Empty transcription - Google STT returned nothing]"
+        );
+        console.warn("⚠️ Transcription is empty");
+      }
+    } catch (error) {
+      console.error("❌ Error processing speech:", error);
+      alert(
+        `Failed to process audio: ${
+          error instanceof Error ? error.message : "Unknown error"
+        }`
+      );
+    } finally {
+      setIsProcessing(false);
+      console.log("🏁 Processing complete");
+    }
   };
 
   const handleSubmitRecording = async (): Promise<void> => {
@@ -176,6 +264,68 @@ export default function PronunciationPractice() {
           Practice your French pronunciation with AI-powered feedback
         </p>
       </div>
+
+      {/* TEST MODE - Audio File Upload */}
+      <Card className="border-2 border-blue-500">
+        <CardHeader>
+          <CardTitle className="text-blue-600">
+            🧪 Test Mode: Upload Audio File
+          </CardTitle>
+          <CardDescription>
+            Upload an audio file (.ogg, .mp3, .wav, .webm, etc.) to test Google
+            Speech-to-Text
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div>
+            <input
+              type="file"
+              accept="audio/*"
+              onChange={handleFileUpload}
+              className="block w-full text-sm text-slate-500
+                file:mr-4 file:py-2 file:px-4
+                file:rounded-md file:border-0
+                file:text-sm file:font-semibold
+                file:bg-blue-50 file:text-blue-700
+                hover:file:bg-blue-100
+                dark:file:bg-blue-900 dark:file:text-blue-200"
+            />
+          </div>
+
+          {uploadedFile && (
+            <div className="space-y-4">
+              <div className="text-sm text-slate-600 dark:text-slate-400">
+                Selected: <strong>{uploadedFile.name}</strong> (
+                {uploadedFile.type})
+              </div>
+
+              {uploadedAudioUrl && (
+                <audio controls src={uploadedAudioUrl} className="w-full" />
+              )}
+
+              <Button
+                onClick={handleTestUploadedFile}
+                disabled={isProcessing}
+                size="lg"
+                className="w-full"
+              >
+                {isProcessing ? "Processing..." : "Test Speech-to-Text"}
+              </Button>
+            </div>
+          )}
+
+          {rawTranscription && (
+            <div className="mt-4 p-4 bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-lg">
+              <Label className="text-green-800 dark:text-green-200 font-semibold">
+                ✅ Raw Transcription from Google STT:
+              </Label>
+              <p className="mt-2 text-lg font-medium text-green-900 dark:text-green-100">
+                {rawTranscription}
+              </p>
+            </div>
+          )}
+        </CardContent>
+      </Card>
 
       {/* Score and Stats */}
       <Card>

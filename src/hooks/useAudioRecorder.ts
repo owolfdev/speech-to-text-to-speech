@@ -29,12 +29,16 @@ export function useAudioRecorder() {
 
   const startRecording = useCallback(async () => {
     try {
+      console.log("🎙️ Requesting microphone access...");
+
       // Check if mediaDevices is supported
       if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
         throw new Error(
           "Your browser does not support audio recording. Please use a modern browser."
         );
       }
+
+      console.log("✅ MediaDevices API available");
 
       const stream = await navigator.mediaDevices.getUserMedia({
         audio: {
@@ -45,27 +49,42 @@ export function useAudioRecorder() {
         },
       });
 
+      console.log("✅ Microphone access granted");
+      console.log("🎤 Audio tracks:", stream.getAudioTracks().length);
+
       streamRef.current = stream;
 
       // Detect supported MIME type for better mobile compatibility
       let mimeType = "audio/webm;codecs=opus";
 
       if (!MediaRecorder.isTypeSupported(mimeType)) {
+        console.log("⚠️ WEBM Opus not supported, trying fallbacks...");
         // Fallback for Safari/iOS
         if (MediaRecorder.isTypeSupported("audio/mp4")) {
           mimeType = "audio/mp4";
+          console.log("✅ Using audio/mp4");
         } else if (MediaRecorder.isTypeSupported("audio/webm")) {
           mimeType = "audio/webm";
+          console.log("✅ Using audio/webm");
         } else if (MediaRecorder.isTypeSupported("audio/ogg")) {
           mimeType = "audio/ogg";
+          console.log("✅ Using audio/ogg");
         } else {
           // Let the browser choose
           mimeType = "";
+          console.log("⚠️ Using browser default MIME type");
         }
+      } else {
+        console.log("✅ Using audio/webm;codecs=opus");
       }
 
       const options = mimeType ? { mimeType } : {};
       const mediaRecorder = new MediaRecorder(stream, options);
+
+      console.log(
+        "📼 MediaRecorder created with MIME:",
+        mediaRecorder.mimeType
+      );
 
       mediaRecorderRef.current = mediaRecorder;
 
@@ -92,6 +111,7 @@ export function useAudioRecorder() {
       };
 
       mediaRecorder.start(1000); // Collect data every second
+      console.log("🔴 Recording started!");
 
       setState((prev) => ({
         ...prev,
@@ -112,8 +132,12 @@ export function useAudioRecorder() {
         }));
       }, 1000);
     } catch (error) {
-      console.error("Error starting recording:", error);
-      throw new Error("Failed to access microphone");
+      console.error("❌ Error starting recording:", error);
+      console.error("Error details:", {
+        name: (error as Error).name,
+        message: (error as Error).message,
+      });
+      throw error;
     }
   }, []);
 
