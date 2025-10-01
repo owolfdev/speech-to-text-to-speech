@@ -30,8 +30,15 @@ export async function POST(request: NextRequest) {
     console.log("📦 [API] Audio buffer size:", audioBytes.length, "bytes");
 
     // Determine encoding based on MIME type
-    let encoding: any = "LINEAR16";
-    let config: any = {
+    type AudioEncoding = "WEBM_OPUS" | "MP3" | "LINEAR16" | "FLAC" | "OGG_OPUS";
+    let encoding: AudioEncoding = "LINEAR16";
+    const config: {
+      encoding?: AudioEncoding;
+      sampleRateHertz?: number;
+      languageCode: string;
+      alternativeLanguageCodes: string[];
+      enableAutomaticPunctuation: boolean;
+    } = {
       languageCode: "fr-FR",
       alternativeLanguageCodes: ["en-US"],
       enableAutomaticPunctuation: true,
