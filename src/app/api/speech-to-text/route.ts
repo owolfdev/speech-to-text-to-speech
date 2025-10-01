@@ -1,14 +1,35 @@
 import { NextRequest, NextResponse } from "next/server";
 import { SpeechClient } from "@google-cloud/speech";
 import path from "path";
+import fs from "fs";
 
-// Initialize the Speech client with explicit credentials
-const speechClient = new SpeechClient({
-  keyFilename: path.join(
-    process.cwd(),
-    "text-to-speech-for-video-app-d10d2fa62487.json"
-  ),
-});
+// Initialize the Speech client with credentials
+// In production (Vercel), use environment variables
+// In development, use the JSON file
+let speechClient: SpeechClient;
+
+const credentialsPath = path.join(
+  process.cwd(),
+  "text-to-speech-for-video-app-d10d2fa62487.json"
+);
+
+if (fs.existsSync(credentialsPath)) {
+  // Development: use the JSON file
+  console.log("📄 Using credentials from JSON file");
+  speechClient = new SpeechClient({
+    keyFilename: credentialsPath,
+  });
+} else {
+  // Production: use environment variables
+  console.log("🔐 Using credentials from environment variables");
+  speechClient = new SpeechClient({
+    credentials: {
+      client_email: process.env.GOOGLE_CLOUD_CLIENT_EMAIL,
+      private_key: process.env.GOOGLE_CLOUD_PRIVATE_KEY?.replace(/\\n/g, "\n"),
+    },
+    projectId: process.env.GOOGLE_CLOUD_PROJECT_ID,
+  });
+}
 
 export async function POST(request: NextRequest) {
   try {
