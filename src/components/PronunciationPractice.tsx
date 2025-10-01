@@ -10,7 +10,6 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import {
   Mic,
@@ -73,8 +72,6 @@ export default function PronunciationPractice() {
     audioUrl,
     startRecording,
     stopRecording,
-    pauseRecording,
-    resumeRecording,
     resetRecording,
     convertToBase64,
   } = useAudioRecorder();
@@ -401,7 +398,7 @@ export default function PronunciationPractice() {
       {/* Testing Mode */}
       {showTestingMode && (
         <Card className="border-2 border-blue-500 bg-blue-50/10">
-          <Card.Header>
+          <CardHeader>
             <div className="flex items-center justify-between">
               <CardTitle className="text-blue-600 flex items-center gap-2">
                 <TestTube className="w-5 h-5" />
@@ -419,7 +416,7 @@ export default function PronunciationPractice() {
               Upload an audio file (.ogg, .mp3, .wav, .webm, etc.) to test
               Google Speech-to-Text
             </CardDescription>
-          </Card.Header>
+          </CardHeader>
           <CardContent className="space-y-4">
             <div>
               <input
@@ -703,8 +700,8 @@ export default function PronunciationPractice() {
               🎉 Phrase Mastered!
             </p>
             <p className="text-sm md:text-base text-muted-foreground">
-              You've successfully repeated this phrase {requiredReps} times.
-              Ready for the next one?
+              You&apos;ve successfully repeated this phrase {requiredReps}{" "}
+              times. Ready for the next one?
             </p>
           </div>
         )}
