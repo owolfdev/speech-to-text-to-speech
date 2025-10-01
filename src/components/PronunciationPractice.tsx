@@ -153,79 +153,107 @@ export default function PronunciationPractice() {
     }
   };
 
-  // Handle recording stop - show audio playback first
-  const handleStopRecording = () => {
+  // Handle recording stop - automatically process audio
+  const handleStopRecording = async () => {
     stopRecording();
-    setShowAudioPlayback(true);
-  };
 
-  // Handle audio processing after user confirms the recording
-  const handleProcessRecording = async (): Promise<void> => {
-    if (!audioBlob || !currentPhrase) return;
+    // Wait a moment for the audio blob to be created
+    setTimeout(async () => {
+      if (!audioBlob || !currentPhrase) return;
 
-    setIsProcessing(true);
-    setShowAudioPlayback(false);
+      setIsProcessing(true);
 
-    try {
-      // Convert audio to base64
-      const base64Audio = await convertToBase64();
+      try {
+        // Convert audio to base64
+        const base64Audio = await convertToBase64();
 
-      // Send to speech-to-text API with MIME type for mobile compatibility
-      const response = await fetch("/api/speech-to-text", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          audioData: base64Audio,
-          mimeType: audioBlob.type,
-        }),
-      });
+        // Send to speech-to-text API with MIME type for mobile compatibility
+        const response = await fetch("/api/speech-to-text", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            audioData: base64Audio,
+            mimeType: audioBlob.type,
+          }),
+        });
 
-      if (!response.ok) {
-        throw new Error("Failed to process speech");
-      }
-
-      const { transcription } = await response.json();
-
-      // Compare with target phrase using our existing algorithm
-      const feedback = getPronunciationFeedback(
-        transcription,
-        currentPhrase.text
-      );
-
-      const newResult: PronunciationResult = {
-        transcription,
-        similarity: feedback.similarity,
-        isAcceptable: feedback.isAcceptable,
-        suggestion: feedback.suggestions[0] || "Keep practicing!",
-      };
-
-      setResult(newResult);
-      setAttempts((prev) => prev + 1);
-
-      // Update repetition count if pronunciation is acceptable
-      if (feedback.isAcceptable) {
-        setScore((prev) => prev + 1);
-        const newSuccessfulReps = successfulReps + 1;
-        setSuccessfulReps(newSuccessfulReps);
-
-        if (newSuccessfulReps >= requiredReps) {
-          setShowCelebration(true);
+        if (!response.ok) {
+          throw new Error("Failed to process speech");
         }
+
+        const { transcription } = await response.json();
+
+        // Compare with target phrase using our existing algorithm
+        const feedback = getPronunciationFeedback(
+          transcription,
+          currentPhrase.text
+        );
+
+        const newResult: PronunciationResult = {
+          transcription,
+          similarity: feedback.similarity,
+          isAcceptable: feedback.isAcceptable,
+          suggestion: feedback.suggestions[0] || "Keep practicing!",
+        };
+
+        setResult(newResult);
+        setAttempts((prev) => prev + 1);
+
+        // If pronunciation is acceptable, automatically add progress
+        if (feedback.isAcceptable) {
+          setScore((prev) => prev + 1);
+          const newSuccessfulReps = successfulReps + 1;
+          setSuccessfulReps(newSuccessfulReps);
+
+          if (newSuccessfulReps >= requiredReps) {
+            setShowCelebration(true);
+          }
+
+          // Clear result after a short delay to show success
+          setTimeout(() => {
+            setResult(null);
+          }, 3000);
+        } else {
+          // If not acceptable, show audio playback for review
+          setShowAudioPlayback(true);
+        }
+      } catch (error) {
+        console.error("Error processing speech:", error);
+        // On error, show audio playback so user can try again
+        setShowAudioPlayback(true);
+      } finally {
+        setIsProcessing(false);
       }
-    } catch (error) {
-      console.error("Error processing speech:", error);
-      alert("Failed to process your speech. Please try again.");
-    } finally {
-      setIsProcessing(false);
-    }
+    }, 500); // Small delay to ensure audio blob is ready
   };
 
-  // Handle re-recording
+  // Handle re-recording from review mode
   const handleRerecord = () => {
     setShowAudioPlayback(false);
+    setResult(null);
     resetRecording();
+  };
+
+  // Handle manual processing from review mode
+  const handleProcessFromReview = async () => {
+    setShowAudioPlayback(false);
+    // The result is already set, just update the repetition count if acceptable
+    if (result && result.isAcceptable) {
+      setScore((prev) => prev + 1);
+      const newSuccessfulReps = successfulReps + 1;
+      setSuccessfulReps(newSuccessfulReps);
+
+      if (newSuccessfulReps >= requiredReps) {
+        setShowCelebration(true);
+      }
+
+      // Clear result after a short delay
+      setTimeout(() => {
+        setResult(null);
+      }, 3000);
+    }
   };
 
   // Get difficulty color for badges
@@ -660,8 +688,8 @@ export default function PronunciationPractice() {
           </Button>
         </div>
 
-        {/* Audio Playback Section */}
-        {showAudioPlayback && audioUrl && (
+        {/* Audio Playback Section - Only shown when pronunciation needs review */}
+        {showAudioPlayback && audioUrl && result && !result.isAcceptable && (
           <div className="space-y-4 pt-4 border-t-2">
             <div className="text-center space-y-4">
               <h3 className="text-lg font-semibold text-foreground">
@@ -671,15 +699,14 @@ export default function PronunciationPractice() {
                 <audio controls src={audioUrl} className="w-full max-w-md" />
               </div>
               <p className="text-sm text-muted-foreground">
-                Listen to your recording. Does it sound good?
+                Listen to your recording and try to improve your pronunciation.
               </p>
               <div className="flex gap-3 justify-center">
                 <Button
-                  onClick={handleProcessRecording}
-                  disabled={isProcessing}
+                  onClick={handleProcessFromReview}
                   className="bg-green-600 hover:bg-green-700 text-white"
                 >
-                  {isProcessing ? "Processing..." : "✅ Submit for Review"}
+                  ✅ Accept This Attempt
                 </Button>
                 <Button
                   onClick={handleRerecord}
@@ -707,36 +734,56 @@ export default function PronunciationPractice() {
         )}
 
         {/* Results display */}
-        {result && !showCelebration && (
+        {result && !showCelebration && !showAudioPlayback && (
           <div className="space-y-4 pt-4 border-t-2">
-            <div className="space-y-2">
-              <h3 className="text-xs md:text-sm font-semibold text-muted-foreground uppercase tracking-wide">
-                Your Pronunciation
-              </h3>
-              <p className="text-base md:text-lg text-foreground p-3 md:p-4 bg-muted rounded-xl">
-                {result.transcription}
-              </p>
-            </div>
+            {result.isAcceptable ? (
+              // Success feedback - more prominent
+              <div className="text-center space-y-4 p-4 bg-green-50 dark:bg-green-900/20 border-2 border-green-200 dark:border-green-800 rounded-xl">
+                <div className="text-4xl">🎉</div>
+                <h3 className="text-xl font-bold text-green-600 dark:text-green-400">
+                  Excellent Pronunciation!
+                </h3>
+                <p className="text-green-700 dark:text-green-300">
+                  You&apos;ve earned a progress point!
+                </p>
+                <div className="flex items-center justify-center gap-4 text-sm">
+                  <span className="text-green-600 dark:text-green-400">
+                    Similarity: {Math.round(result.similarity * 100)}%
+                  </span>
+                  <span className="text-green-600 dark:text-green-400">
+                    Progress: {successfulReps + 1}/{requiredReps}
+                  </span>
+                </div>
+              </div>
+            ) : (
+              // Needs improvement feedback
+              <div className="space-y-4">
+                <div className="space-y-2">
+                  <h3 className="text-xs md:text-sm font-semibold text-muted-foreground uppercase tracking-wide">
+                    Your Pronunciation
+                  </h3>
+                  <p className="text-base md:text-lg text-foreground p-3 md:p-4 bg-muted rounded-xl">
+                    {result.transcription}
+                  </p>
+                </div>
 
-            <div className="flex items-center justify-between p-3 md:p-4 bg-[#5BA3E8]/10 rounded-xl border-2 border-[#5BA3E8]/30">
-              <div>
-                <p className="text-xs md:text-sm text-muted-foreground mb-1">
-                  Similarity Score
-                </p>
-                <p className="text-xl md:text-2xl font-bold text-[#5BA3E8]">
-                  {Math.round(result.similarity * 100)}%
-                </p>
+                <div className="flex items-center justify-between p-3 md:p-4 bg-yellow-50 dark:bg-yellow-900/20 border-2 border-yellow-200 dark:border-yellow-800 rounded-xl">
+                  <div>
+                    <p className="text-xs md:text-sm text-muted-foreground mb-1">
+                      Similarity Score
+                    </p>
+                    <p className="text-xl md:text-2xl font-bold text-yellow-600">
+                      {Math.round(result.similarity * 100)}%
+                    </p>
+                  </div>
+                  <div className="text-right">
+                    <p className="text-base md:text-lg font-semibold text-yellow-600">
+                      {result.suggestion}
+                    </p>
+                  </div>
+                </div>
               </div>
-              <div className="text-right">
-                <p
-                  className={`text-base md:text-lg font-semibold ${
-                    result.isAcceptable ? "text-green-600" : "text-yellow-600"
-                  }`}
-                >
-                  {result.suggestion}
-                </p>
-              </div>
-            </div>
+            )}
           </div>
         )}
       </Card>
