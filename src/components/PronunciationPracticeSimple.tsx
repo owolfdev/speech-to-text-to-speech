@@ -795,16 +795,6 @@ export default function PronunciationPracticeSimple() {
             }`}
           >
             <div className="text-center space-y-2">
-              {/* <div className="text-2xl">{lastResult.success ? "🎉" : "💪"}</div>
-              <h3
-                className={`font-bold ${
-                  lastResult.success
-                    ? "text-green-600 dark:text-green-400"
-                    : "text-yellow-600 dark:text-yellow-400"
-                }`}
-              >
-                {lastResult.success ? "Success!" : "Keep Practicing!"}
-              </h3> */}
               <p
                 className={`${
                   lastResult.success
@@ -823,7 +813,7 @@ export default function PronunciationPracticeSimple() {
           </div>
         )}
 
-        {/* Celebration display */}
+        {/* Celebration display - integrated with success message */}
         {showCelebration && (
           <div className="p-4 md:p-6 bg-[#5BA3E8]/10 rounded-xl border-2 border-[#5BA3E8] text-center space-y-2 animate-in fade-in slide-in-from-bottom-4">
             <p className="text-xl md:text-2xl font-bold text-[#5BA3E8]">
