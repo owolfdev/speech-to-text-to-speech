@@ -8,6 +8,7 @@ A Next.js web application that helps users practice French pronunciation using G
 
 - **Audio Recording**: Record your French pronunciation directly in the browser
 - **Speech-to-Text**: Powered by Google Cloud Speech-to-Text API with French language support
+- **Text-to-Speech**: High-quality French audio using Google Cloud TTS with Neural2 voices
 - **Pronunciation Analysis**: Compare spoken text with target phrases using similarity algorithms
 - **Smart Feedback**: Get detailed feedback and suggestions for improvement
 - **Progress Tracking**: Track your accuracy score and attempt statistics
@@ -35,10 +36,12 @@ A Next.js web application that helps users practice French pronunciation using G
 - **UI Components**: Radix UI primitives with custom styling
 - **State Management**: React hooks for audio recording and app state
 - **Audio Processing**: Web Audio API with MediaRecorder
+- **Text-to-Speech**: Google Cloud TTS integration with high-quality French voices
 
 ### Backend (API Routes)
 
 - **Speech Processing**: Google Cloud Speech-to-Text API integration
+- **Text-to-Speech**: Google Cloud Text-to-Speech API with Neural2 voices
 - **Audio Format Detection**: Automatic MIME type detection and encoding
 - **Error Handling**: Comprehensive error handling and logging
 - **Development/Production**: Dual credential system (JSON file vs environment variables)
@@ -254,11 +257,16 @@ npm run lint     # Run ESLint
 ```
 src/
 ├── app/                    # Next.js app directory
-│   ├── api/speech-to-text/ # API route for STT
+│   ├── api/
+│   │   ├── speech-to-text/ # API route for STT
+│   │   └── text-to-speech/ # API route for TTS
 │   ├── layout.tsx          # Root layout
 │   └── page.tsx            # Home page
 ├── components/             # React components
 │   ├── PronunciationPractice.tsx
+│   ├── PronunciationPracticeSimple.tsx
+│   ├── PronunciationPracticeV2.tsx
+│   ├── TTSAudioPlayer.tsx  # TTS audio player component
 │   └── ui/                 # Reusable UI components
 ├── data/                   # Static data
 │   └── french-phrases.ts   # Phrase database
@@ -286,11 +294,25 @@ src/
 
 ### Environment Variables for Production
 
+#### Speech-to-Text (STT)
+
 ```
 GOOGLE_CLOUD_CLIENT_EMAIL
 GOOGLE_CLOUD_PRIVATE_KEY
 GOOGLE_CLOUD_PROJECT_ID
 ```
+
+#### Text-to-Speech (TTS)
+
+```
+# Option 1: Service Account Key (JSON string) - Recommended for Vercel
+GCLOUD_TTS_KEY={"type":"service_account","project_id":"your-project-id",...}
+
+# Option 2: Path to service account key file - For local development
+GOOGLE_APPLICATION_CREDENTIALS=/path/to/your/service-account-key.json
+```
+
+**Note**: Only one TTS option is required. `GCLOUD_TTS_KEY` is preferred for Vercel deployment, while `GOOGLE_APPLICATION_CREDENTIALS` is preferred for local development.
 
 ## 📝 License
 

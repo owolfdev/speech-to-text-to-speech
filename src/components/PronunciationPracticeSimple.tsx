@@ -23,7 +23,6 @@ import {
   Trophy,
   PartyPopper,
   Info,
-  Volume2,
   TestTube,
   X,
 } from "lucide-react";
@@ -35,6 +34,7 @@ import {
   type FrenchPhrase,
 } from "@/lib/phrases-fallback";
 import { getPronunciationFeedback } from "@/lib/text-comparison";
+import TTSAudioPlayer from "@/components/TTSAudioPlayer";
 
 // SIMPLE STATE MACHINE
 type AppState = "idle" | "recording" | "processing";
@@ -102,107 +102,23 @@ export default function PronunciationPracticeSimple() {
     });
   }, [appState, isAudioRecording, audioBlob, successfulReps, requiredReps]);
 
-  // Handle audio playback using native TTS (for now)
-  const handlePlayAudio = async () => {
-    if (!currentPhrase) return;
-
-    console.log("🔊 Starting native TTS for:", currentPhrase.text);
+  // Handle audio playback events
+  const handlePlayStart = () => {
     setIsPlayingAudio(true);
+  };
 
-    // Use native TTS directly for now (Google TTS needs API key setup)
-    if ("speechSynthesis" in window) {
-      // Debug: Check available voices
-      const voices = window.speechSynthesis.getVoices();
-      console.log("🎤 Available voices:", voices.length);
+  const handlePlayEnd = () => {
+    setIsPlayingAudio(false);
+  };
 
-      // Find French voices
-      const frenchVoices = voices.filter(
-        (voice) => voice.lang.startsWith("fr") || voice.lang.includes("French")
-      );
-      console.log(
-        "🇫🇷 French voices:",
-        frenchVoices.map((v) => `${v.name} (${v.lang})`)
-      );
-
-      // Cancel any ongoing speech
-      window.speechSynthesis.cancel();
-
-      // Wait a moment for cancellation to complete
-      setTimeout(() => {
-        const utterance = new SpeechSynthesisUtterance(currentPhrase.text);
-
-        // Try to use a French voice if available
-        if (frenchVoices.length > 0) {
-          utterance.voice = frenchVoices[0];
-          console.log("🎯 Using French voice:", frenchVoices[0].name);
-        } else {
-          console.log("⚠️ No French voices found, using default");
-        }
-
-        utterance.lang = "fr-FR";
-        utterance.rate = 0.8; // Slower for better pronunciation
-        utterance.volume = 1.0;
-        utterance.pitch = 1.0;
-
-        utterance.onstart = () => {
-          console.log("🎵 Native TTS started");
-          setIsPlayingAudio(true);
-        };
-
-        utterance.onend = () => {
-          console.log("✅ Native TTS ended");
-          setIsPlayingAudio(false);
-        };
-
-        utterance.onerror = (event) => {
-          console.error("❌ Native TTS error:", event.error, event);
-          setIsPlayingAudio(false);
-
-          // Try with English as fallback
-          console.log("🔄 Trying English fallback...");
-          const englishUtterance = new SpeechSynthesisUtterance(
-            currentPhrase.text
-          );
-          englishUtterance.lang = "en-US";
-          englishUtterance.rate = 0.8;
-          englishUtterance.volume = 1.0;
-
-          englishUtterance.onend = () => {
-            console.log("✅ English TTS ended");
-            setIsPlayingAudio(false);
-          };
-
-          englishUtterance.onerror = () => {
-            console.error("❌ English TTS also failed");
-            setIsPlayingAudio(false);
-          };
-
-          window.speechSynthesis.speak(englishUtterance);
-        };
-
-        console.log("🔊 Speaking:", currentPhrase.text);
-        console.log("🔊 Voice settings:", {
-          voice: utterance.voice?.name || "default",
-          lang: utterance.lang,
-          rate: utterance.rate,
-          volume: utterance.volume,
-          pitch: utterance.pitch,
-        });
-
-        window.speechSynthesis.speak(utterance);
-      }, 100);
-    } else {
-      console.error("❌ Speech synthesis not supported in this browser");
-      setIsPlayingAudio(false);
-    }
+  const handlePlayError = (error: string) => {
+    console.error("TTS Error:", error);
+    setIsPlayingAudio(false);
+    alert(`Audio playback failed: ${error}`);
   };
 
   // Handle phrase navigation
   const handleNextPhrase = () => {
-    if ("speechSynthesis" in window) {
-      window.speechSynthesis.cancel();
-    }
-
     handleButtonPress(); // Trigger animation
 
     // Reset everything for new phrase
@@ -425,22 +341,6 @@ export default function PronunciationPracticeSimple() {
       processAudioAutomatically(audioBlob);
     }
   }, [audioBlob, appState, processAudioAutomatically]);
-
-  // Test TTS function
-  const handleTestTTS = () => {
-    console.log("🧪 Testing TTS...");
-    const testUtterance = new SpeechSynthesisUtterance("Hello, this is a test");
-    testUtterance.lang = "en-US";
-    testUtterance.rate = 1.0;
-    testUtterance.volume = 1.0;
-
-    testUtterance.onstart = () => console.log("🧪 Test TTS started");
-    testUtterance.onend = () => console.log("🧪 Test TTS ended");
-    testUtterance.onerror = (event) =>
-      console.error("🧪 Test TTS error:", event);
-
-    window.speechSynthesis.speak(testUtterance);
-  };
 
   // Testing mode functions
   const handleFileUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -689,15 +589,6 @@ export default function PronunciationPracticeSimple() {
                     dark:file:bg-blue-900 dark:file:text-blue-200"
                 />
               </div>
-
-              <Button
-                onClick={handleTestTTS}
-                size="sm"
-                variant="outline"
-                className="w-full border-orange-500 text-orange-600 hover:bg-orange-50"
-              >
-                🧪 Test TTS (English)
-              </Button>
             </div>
 
             {uploadedFile && (
@@ -779,20 +670,14 @@ export default function PronunciationPracticeSimple() {
           <div className="space-y-3">
             {/* Phrase display with audio and translation controls */}
             <div className="p-4 md:p-6 bg-[#5BA3E8]/10 rounded-xl border-2 border-[#5BA3E8]/30 relative">
-              <Button
-                variant="ghost"
-                size="icon"
-                onClick={handlePlayAudio}
-                disabled={isPlayingAudio}
-                className="absolute top-2 left-2 h-8 w-8 rounded-full hover:bg-[#5BA3E8]/10"
-                title="Listen to pronunciation"
-              >
-                <Volume2
-                  className={`w-4 h-4 text-[#5BA3E8] ${
-                    isPlayingAudio ? "animate-pulse" : ""
-                  }`}
-                />
-              </Button>
+              <TTSAudioPlayer
+                text={currentPhrase.text}
+                className="absolute top-2 left-2"
+                disabled={!currentPhrase}
+                onPlayStart={handlePlayStart}
+                onPlayEnd={handlePlayEnd}
+                onError={handlePlayError}
+              />
 
               <p className="text-xl md:text-2xl font-medium text-[#5BA3E8] text-center text-balance px-8">
                 {currentPhrase.text}

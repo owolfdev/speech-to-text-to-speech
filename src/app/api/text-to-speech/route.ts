@@ -1,4 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
+import { TextToSpeechClient } from "@google-cloud/text-to-speech";
+import fs from "fs";
 
 export async function POST(request: NextRequest) {
   try {
@@ -8,61 +10,56 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "Text is required" }, { status: 400 });
     }
 
-    // Google Cloud Text-to-Speech API configuration
-    const apiKey = process.env.GOOGLE_API_KEY;
-    if (!apiKey) {
-      console.error("Google API key not found - falling back to native TTS");
-      return NextResponse.json(
-        { error: "Google API key not configured - please use native TTS" },
-        { status: 503 } // Service unavailable, not internal error
-      );
+    // Dynamic credential handling for different environments
+    if (
+      process.env.GCLOUD_TTS_KEY &&
+      !process.env.GOOGLE_APPLICATION_CREDENTIALS
+    ) {
+      const tmpKeyPath = "/tmp/tts-key.json";
+      fs.writeFileSync(tmpKeyPath, process.env.GCLOUD_TTS_KEY, "utf8");
+      process.env.GOOGLE_APPLICATION_CREDENTIALS = tmpKeyPath;
     }
 
-    const ttsRequest = {
+    // Initialize Google Cloud TTS client
+    const client = new TextToSpeechClient();
+
+    // TTS Request Configuration
+    const requestPayload = {
       input: { text },
       voice: {
         languageCode: "fr-FR",
-        name: "fr-FR-Wavenet-A", // High-quality French voice
-        ssmlGender: "NEUTRAL",
+        name: "fr-FR-Neural2-D", // High-quality Neural2 voice for French
       },
       audioConfig: {
-        audioEncoding: "MP3",
+        audioEncoding: "MP3" as const,
         speakingRate: 0.9,
         pitch: 0.0,
       },
     };
 
-    const response = await fetch(
-      `https://texttospeech.googleapis.com/v1/text:synthesize?key=${apiKey}`,
-      {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify(ttsRequest),
-      }
-    );
+    // Synthesize speech using Google Cloud TTS client
+    const [response] = await client.synthesizeSpeech(requestPayload);
 
-    if (!response.ok) {
-      const errorData = await response.text();
-      console.error("Google TTS API error:", errorData);
-      return NextResponse.json(
-        { error: "Failed to synthesize speech" },
-        { status: response.status }
-      );
+    if (!response.audioContent) {
+      throw new Error("No audio content received from TTS service");
     }
 
-    const data = await response.json();
+    // Convert audio content to buffer
+    const audioBuffer = Buffer.from(response.audioContent as Uint8Array);
 
-    // Return the base64 audio data
-    return NextResponse.json({
-      audioContent: data.audioContent,
-      mimeType: "audio/mp3",
+    // Return audio as MP3 binary data with appropriate headers
+    return new NextResponse(audioBuffer, {
+      status: 200,
+      headers: {
+        "Content-Type": "audio/mp3",
+        "Content-Length": audioBuffer.length.toString(),
+        "Cache-Control": "public, max-age=3600", // Cache for 1 hour
+      },
     });
   } catch (error) {
     console.error("TTS API error:", error);
     return NextResponse.json(
-      { error: "Internal server error" },
+      { error: "Failed to synthesize speech" },
       { status: 500 }
     );
   }
