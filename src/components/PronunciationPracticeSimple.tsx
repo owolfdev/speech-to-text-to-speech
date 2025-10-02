@@ -95,22 +95,98 @@ export default function PronunciationPracticeSimple() {
     });
   }, [appState, isAudioRecording, audioBlob, successfulReps, requiredReps]);
 
-  // Handle audio playback using native TTS
-  const handlePlayAudio = () => {
+  // Handle audio playback using native TTS (for now)
+  const handlePlayAudio = async () => {
     if (!currentPhrase) return;
 
+    console.log("🔊 Starting native TTS for:", currentPhrase.text);
+    setIsPlayingAudio(true);
+
+    // Use native TTS directly for now (Google TTS needs API key setup)
     if ("speechSynthesis" in window) {
+      // Debug: Check available voices
+      const voices = window.speechSynthesis.getVoices();
+      console.log("🎤 Available voices:", voices.length);
+
+      // Find French voices
+      const frenchVoices = voices.filter(
+        (voice) => voice.lang.startsWith("fr") || voice.lang.includes("French")
+      );
+      console.log(
+        "🇫🇷 French voices:",
+        frenchVoices.map((v) => `${v.name} (${v.lang})`)
+      );
+
+      // Cancel any ongoing speech
       window.speechSynthesis.cancel();
 
-      const utterance = new SpeechSynthesisUtterance(currentPhrase.text);
-      utterance.lang = "fr-FR";
-      utterance.rate = 0.9;
+      // Wait a moment for cancellation to complete
+      setTimeout(() => {
+        const utterance = new SpeechSynthesisUtterance(currentPhrase.text);
 
-      utterance.onstart = () => setIsPlayingAudio(true);
-      utterance.onend = () => setIsPlayingAudio(false);
-      utterance.onerror = () => setIsPlayingAudio(false);
+        // Try to use a French voice if available
+        if (frenchVoices.length > 0) {
+          utterance.voice = frenchVoices[0];
+          console.log("🎯 Using French voice:", frenchVoices[0].name);
+        } else {
+          console.log("⚠️ No French voices found, using default");
+        }
 
-      window.speechSynthesis.speak(utterance);
+        utterance.lang = "fr-FR";
+        utterance.rate = 0.8; // Slower for better pronunciation
+        utterance.volume = 1.0;
+        utterance.pitch = 1.0;
+
+        utterance.onstart = () => {
+          console.log("🎵 Native TTS started");
+          setIsPlayingAudio(true);
+        };
+
+        utterance.onend = () => {
+          console.log("✅ Native TTS ended");
+          setIsPlayingAudio(false);
+        };
+
+        utterance.onerror = (event) => {
+          console.error("❌ Native TTS error:", event.error, event);
+          setIsPlayingAudio(false);
+
+          // Try with English as fallback
+          console.log("🔄 Trying English fallback...");
+          const englishUtterance = new SpeechSynthesisUtterance(
+            currentPhrase.text
+          );
+          englishUtterance.lang = "en-US";
+          englishUtterance.rate = 0.8;
+          englishUtterance.volume = 1.0;
+
+          englishUtterance.onend = () => {
+            console.log("✅ English TTS ended");
+            setIsPlayingAudio(false);
+          };
+
+          englishUtterance.onerror = () => {
+            console.error("❌ English TTS also failed");
+            setIsPlayingAudio(false);
+          };
+
+          window.speechSynthesis.speak(englishUtterance);
+        };
+
+        console.log("🔊 Speaking:", currentPhrase.text);
+        console.log("🔊 Voice settings:", {
+          voice: utterance.voice?.name || "default",
+          lang: utterance.lang,
+          rate: utterance.rate,
+          volume: utterance.volume,
+          pitch: utterance.pitch,
+        });
+
+        window.speechSynthesis.speak(utterance);
+      }, 100);
+    } else {
+      console.error("❌ Speech synthesis not supported in this browser");
+      setIsPlayingAudio(false);
     }
   };
 
@@ -339,6 +415,22 @@ export default function PronunciationPracticeSimple() {
       processAudioAutomatically(audioBlob);
     }
   }, [audioBlob, appState, processAudioAutomatically]);
+
+  // Test TTS function
+  const handleTestTTS = () => {
+    console.log("🧪 Testing TTS...");
+    const testUtterance = new SpeechSynthesisUtterance("Hello, this is a test");
+    testUtterance.lang = "en-US";
+    testUtterance.rate = 1.0;
+    testUtterance.volume = 1.0;
+
+    testUtterance.onstart = () => console.log("🧪 Test TTS started");
+    testUtterance.onend = () => console.log("🧪 Test TTS ended");
+    testUtterance.onerror = (event) =>
+      console.error("🧪 Test TTS error:", event);
+
+    window.speechSynthesis.speak(testUtterance);
+  };
 
   // Testing mode functions
   const handleFileUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -572,19 +664,30 @@ export default function PronunciationPracticeSimple() {
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
-            <div>
-              <input
-                type="file"
-                accept="audio/*"
-                onChange={handleFileUpload}
-                className="block w-full text-sm text-slate-500
-                  file:mr-4 file:py-2 file:px-4
-                  file:rounded-md file:border-0
-                  file:text-sm file:font-semibold
-                  file:bg-blue-50 file:text-blue-700
-                  hover:file:bg-blue-100
-                  dark:file:bg-blue-900 dark:file:text-blue-200"
-              />
+            <div className="space-y-3">
+              <div>
+                <input
+                  type="file"
+                  accept="audio/*"
+                  onChange={handleFileUpload}
+                  className="block w-full text-sm text-slate-500
+                    file:mr-4 file:py-2 file:px-4
+                    file:rounded-md file:border-0
+                    file:text-sm file:font-semibold
+                    file:bg-blue-50 file:text-blue-700
+                    hover:file:bg-blue-100
+                    dark:file:bg-blue-900 dark:file:text-blue-200"
+                />
+              </div>
+
+              <Button
+                onClick={handleTestTTS}
+                size="sm"
+                variant="outline"
+                className="w-full border-orange-500 text-orange-600 hover:bg-orange-50"
+              >
+                🧪 Test TTS (English)
+              </Button>
             </div>
 
             {uploadedFile && (
