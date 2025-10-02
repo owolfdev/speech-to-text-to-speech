@@ -903,7 +903,7 @@ export default function PronunciationPracticeSimple() {
             }`}
           >
             <div className="text-center space-y-2">
-              <div className="text-2xl">{lastResult.success ? "🎉" : "💪"}</div>
+              {/* <div className="text-2xl">{lastResult.success ? "🎉" : "💪"}</div>
               <h3
                 className={`font-bold ${
                   lastResult.success
@@ -912,7 +912,7 @@ export default function PronunciationPracticeSimple() {
                 }`}
               >
                 {lastResult.success ? "Success!" : "Keep Practicing!"}
-              </h3>
+              </h3> */}
               <p
                 className={`${
                   lastResult.success
