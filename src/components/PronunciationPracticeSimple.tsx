@@ -785,44 +785,47 @@ export default function PronunciationPracticeSimple() {
           </Button>
         </div>
 
-        {/* SIMPLE SUCCESS/FAILURE MESSAGE - Below buttons */}
-        {lastResult && (
+        {/* UNIFIED SUCCESS/FAILURE/CELEBRATION MESSAGE - Below buttons */}
+        {(lastResult || showCelebration) && (
           <div
-            className={`p-4 rounded-xl border-2 ${
-              lastResult.success
+            className={`p-4 md:p-6 rounded-xl border-2 ${
+              showCelebration
+                ? "bg-[#5BA3E8]/10 border-[#5BA3E8] animate-in fade-in slide-in-from-bottom-4"
+                : lastResult?.success
                 ? "bg-green-50 dark:bg-green-900/20 border-green-200 dark:border-green-800"
                 : "bg-yellow-50 dark:bg-yellow-900/20 border-yellow-200 dark:border-yellow-800"
             }`}
           >
             <div className="text-center space-y-2">
-              <p
-                className={`${
-                  lastResult.success
-                    ? "text-green-700 dark:text-green-300"
-                    : "text-yellow-700 dark:text-yellow-300"
-                }`}
-              >
-                {lastResult.message}
-              </p>
-              {lastResult.transcription && (
-                <p className="text-sm text-muted-foreground italic">
-                  You said: &quot;{lastResult.transcription}&quot;
-                </p>
-              )}
+              {showCelebration ? (
+                <>
+                  <p className="text-xl md:text-2xl font-bold text-[#5BA3E8]">
+                    🎉 Phrase Mastered!
+                  </p>
+                  <p className="text-sm md:text-base text-muted-foreground">
+                    You&apos;ve successfully repeated this phrase {requiredReps}{" "}
+                    times. Ready for the next one?
+                  </p>
+                </>
+              ) : lastResult ? (
+                <>
+                  <p
+                    className={`${
+                      lastResult.success
+                        ? "text-green-700 dark:text-green-300"
+                        : "text-yellow-700 dark:text-yellow-300"
+                    }`}
+                  >
+                    {lastResult.message}
+                  </p>
+                  {lastResult.transcription && (
+                    <p className="text-sm text-muted-foreground italic">
+                      You said: &quot;{lastResult.transcription}&quot;
+                    </p>
+                  )}
+                </>
+              ) : null}
             </div>
-          </div>
-        )}
-
-        {/* Celebration display - integrated with success message */}
-        {showCelebration && (
-          <div className="p-4 md:p-6 bg-[#5BA3E8]/10 rounded-xl border-2 border-[#5BA3E8] text-center space-y-2 animate-in fade-in slide-in-from-bottom-4">
-            <p className="text-xl md:text-2xl font-bold text-[#5BA3E8]">
-              🎉 Phrase Mastered!
-            </p>
-            <p className="text-sm md:text-base text-muted-foreground">
-              You&apos;ve successfully repeated this phrase {requiredReps}{" "}
-              times. Ready for the next one?
-            </p>
           </div>
         )}
       </Card>
