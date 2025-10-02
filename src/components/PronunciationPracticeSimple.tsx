@@ -45,7 +45,6 @@ export default function PronunciationPracticeSimple() {
   const [successfulReps, setSuccessfulReps] = useState(0);
   const [requiredReps] = useState(5);
   const [showTranslation, setShowTranslation] = useState(false);
-  const [isPlayingAudio, setIsPlayingAudio] = useState(false);
   const [showCelebration, setShowCelebration] = useState(false);
   const [permissionError, setPermissionError] = useState<string | null>(null);
   const [currentPhrase, setCurrentPhrase] = useState<FrenchPhrase | null>(null);
@@ -104,16 +103,15 @@ export default function PronunciationPracticeSimple() {
 
   // Handle audio playback events
   const handlePlayStart = () => {
-    setIsPlayingAudio(true);
+    // Audio playback started
   };
 
   const handlePlayEnd = () => {
-    setIsPlayingAudio(false);
+    // Audio playback ended
   };
 
   const handlePlayError = (error: string) => {
     console.error("TTS Error:", error);
-    setIsPlayingAudio(false);
     alert(`Audio playback failed: ${error}`);
   };
 
@@ -128,7 +126,6 @@ export default function PronunciationPracticeSimple() {
     setCurrentPhraseIndex((prev) => (prev % getTotalPhraseCount()) + 1);
     setSuccessfulReps(0);
     setShowTranslation(false);
-    setIsPlayingAudio(false);
 
     // Load next phrase in sequence
     const loadNewPhrase = async () => {

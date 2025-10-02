@@ -305,14 +305,13 @@ GOOGLE_CLOUD_PROJECT_ID
 #### Text-to-Speech (TTS)
 
 ```
-# Option 1: Service Account Key (JSON string) - Recommended for Vercel
-GCLOUD_TTS_KEY={"type":"service_account","project_id":"your-project-id",...}
-
-# Option 2: Path to service account key file - For local development
-GOOGLE_APPLICATION_CREDENTIALS=/path/to/your/service-account-key.json
+# Uses the same credentials as Speech-to-Text
+GOOGLE_CLOUD_CLIENT_EMAIL
+GOOGLE_CLOUD_PRIVATE_KEY
+GOOGLE_CLOUD_PROJECT_ID
 ```
 
-**Note**: Only one TTS option is required. `GCLOUD_TTS_KEY` is preferred for Vercel deployment, while `GOOGLE_APPLICATION_CREDENTIALS` is preferred for local development.
+**Note**: TTS uses the same Google Cloud credentials as STT. No additional environment variables are needed.
 
 ## 📝 License
 
