@@ -39,8 +39,17 @@ interface PronunciationResult {
   suggestion: string;
 }
 
-export default function PronunciationPractice() {
-  // Core state from refined interface
+// BULLETPROOF STATE MACHINE
+type AppState =
+  | "idle"
+  | "recording"
+  | "reviewing"
+  | "processing"
+  | "success"
+  | "error";
+
+export default function PronunciationPracticeV2() {
+  // Core state
   const [currentPhraseIndex, setCurrentPhraseIndex] = useState(0);
   const [successfulReps, setSuccessfulReps] = useState(0);
   const [requiredReps] = useState(5);
@@ -48,12 +57,8 @@ export default function PronunciationPractice() {
   const [isPlayingAudio, setIsPlayingAudio] = useState(false);
   const [showCelebration, setShowCelebration] = useState(false);
   const [permissionError, setPermissionError] = useState<string | null>(null);
-  const [showAudioPlayback, setShowAudioPlayback] = useState(false);
-
-  // Enhanced state for our existing functionality
   const [currentPhrase, setCurrentPhrase] = useState<FrenchPhrase | null>(null);
   const [result, setResult] = useState<PronunciationResult | null>(null);
-  const [isProcessing, setIsProcessing] = useState(false);
   const [score, setScore] = useState(0);
   const [attempts, setAttempts] = useState(0);
 
@@ -63,15 +68,8 @@ export default function PronunciationPractice() {
   const [uploadedAudioUrl, setUploadedAudioUrl] = useState<string | null>(null);
   const [rawTranscription, setRawTranscription] = useState<string>("");
 
-  // Prevent reprocessing the same audio blob
-  const [processedAudioBlob, setProcessedAudioBlob] = useState<Blob | null>(
-    null
-  );
-
-  // Track recording session to ensure we only process current session
-  const [currentRecordingSession, setCurrentRecordingSession] = useState<
-    string | null
-  >(null);
+  // BULLETPROOF STATE MACHINE - Single source of truth
+  const [appState, setAppState] = useState<AppState>("idle");
 
   // Use our existing audio recorder hook
   const {
@@ -92,37 +90,24 @@ export default function PronunciationPractice() {
     setCurrentPhrase(newPhrase);
   }, []);
 
-  // Debug logging for state changes
+  // Debug logging
   useEffect(() => {
-    const buttonDisabled = showCelebration || isProcessing || showAudioPlayback;
-    console.log("🔄 State update:", {
+    console.log("🔄 App State:", appState, {
       isAudioRecording,
       audioBlob: audioBlob
         ? `${audioBlob.type} (${audioBlob.size} bytes)`
         : null,
       audioUrl: audioUrl ? "Available" : null,
-      isProcessing,
-      showAudioPlayback: showAudioPlayback ? "True" : "False",
-      showCelebration: showCelebration ? "True" : "False",
-      processedAudioBlob: processedAudioBlob ? "Set" : "Null",
-      recordingSession: currentRecordingSession || "Null",
-      buttonDisabled: buttonDisabled ? "DISABLED" : "ENABLED",
-      result: result
-        ? `${result.isAcceptable ? "Acceptable" : "Needs review"} (${Math.round(
-            result.similarity * 100
-          )}%)`
-        : null,
+      successfulReps,
+      requiredReps,
     });
   }, [
+    appState,
     isAudioRecording,
     audioBlob,
     audioUrl,
-    isProcessing,
-    showAudioPlayback,
-    processedAudioBlob,
-    currentRecordingSession,
-    showCelebration,
-    result,
+    successfulReps,
+    requiredReps,
   ]);
 
   // Handle audio playback using native TTS
@@ -149,14 +134,15 @@ export default function PronunciationPractice() {
     if ("speechSynthesis" in window) {
       window.speechSynthesis.cancel();
     }
+
+    // Reset everything for new phrase
+    setAppState("idle");
     setShowCelebration(false);
     setCurrentPhraseIndex((prev) => prev + 1);
     setSuccessfulReps(0);
     setResult(null);
     setShowTranslation(false);
     setIsPlayingAudio(false);
-    setProcessedAudioBlob(null); // Reset processed blob for new phrase
-    setCurrentRecordingSession(null); // Reset recording session
 
     // Load new random phrase
     const newPhrase = getRandomPhrase("beginner");
@@ -165,23 +151,27 @@ export default function PronunciationPractice() {
     resetRecording();
   };
 
-  // Handle recording start with our existing error handling
+  // BULLETPROOF RECORDING START
   const handleStartRecording = async (): Promise<void> => {
     try {
       console.log("🎤 Starting recording...");
+
+      // Clear any previous state
       setPermissionError(null);
-      setShowAudioPlayback(false); // Ensure audio playback is cleared
-      setShowCelebration(false); // Ensure celebration is cleared
       setResult(null);
-      setProcessedAudioBlob(null); // Reset processed blob for new recording
-      setCurrentRecordingSession(Math.random().toString(36)); // Create unique session ID
+      setAppState("idle");
+
+      // Start recording
       await startRecording();
+      setAppState("recording");
+
       console.log("✅ Recording started successfully");
     } catch (error) {
       const err = error as Error;
       console.error("Failed to start recording:", error);
       const errorMessage = err.message || "Failed to access microphone";
       setPermissionError(errorMessage);
+      setAppState("error");
 
       // Provide helpful error messages for mobile users
       if (
@@ -203,145 +193,112 @@ export default function PronunciationPractice() {
     }
   };
 
-  // Handle recording stop - automatically process audio
-  const handleStopRecording = () => {
+  // BULLETPROOF RECORDING STOP
+  const handleStopRecording = async () => {
     console.log("🛑 Stopping recording...");
+
+    // Stop recording
     stopRecording();
-  };
 
-  // Process audio when audioBlob becomes available
-  useEffect(() => {
-    const processAudio = async () => {
-      if (!audioBlob || !currentPhrase || isAudioRecording || isProcessing)
-        return;
-
-      // Prevent reprocessing the same audio blob
-      if (processedAudioBlob === audioBlob) {
-        console.log("🚫 Skipping - already processed this audio blob");
-        return;
-      }
-
-      // Only process if we're not currently recording and have a valid blob
-      if (audioBlob.size === 0) {
-        console.log("🚫 Skipping - empty audio blob");
-        return;
-      }
-
-      // Only process if we have a current recording session
-      if (!currentRecordingSession) {
-        console.log("🚫 Skipping - no active recording session");
-        return;
-      }
-
-      console.log(
-        "🎵 Audio blob available, processing...",
-        audioBlob.type,
-        audioBlob.size
-      );
-
-      // Mark this blob as being processed
-      setProcessedAudioBlob(audioBlob);
-      setIsProcessing(true);
-
-      // Clear the recording session to prevent reprocessing
-      setCurrentRecordingSession(null);
-
-      try {
-        // Convert audio to base64
-        const base64Audio = await convertToBase64();
-        console.log(
-          "📦 Audio converted to base64, length:",
-          base64Audio.length
-        );
-
-        // Send to speech-to-text API with MIME type for mobile compatibility
-        const response = await fetch("/api/speech-to-text", {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({
-            audioData: base64Audio,
-            mimeType: audioBlob.type,
-          }),
-        });
-
-        console.log("📤 API response status:", response.status);
-
-        if (!response.ok) {
-          throw new Error("Failed to process speech");
-        }
-
-        const { transcription } = await response.json();
-        console.log("🗣️ Transcription received:", transcription);
-
-        // Compare with target phrase using our existing algorithm
-        const feedback = getPronunciationFeedback(
-          transcription,
-          currentPhrase.text
-        );
-
-        console.log("📊 Feedback:", feedback);
-
-        const newResult: PronunciationResult = {
-          transcription,
-          similarity: feedback.similarity,
-          isAcceptable: feedback.isAcceptable,
-          suggestion: feedback.suggestions[0] || "Keep practicing!",
-        };
-
-        setResult(newResult);
-        setAttempts((prev) => prev + 1);
-
-        // If pronunciation is acceptable, automatically add progress
-        if (feedback.isAcceptable) {
-          setScore((prev) => prev + 1);
-          const newSuccessfulReps = successfulReps + 1;
-          setSuccessfulReps(newSuccessfulReps);
-
-          if (newSuccessfulReps >= requiredReps) {
-            setShowCelebration(true);
-          }
-
-          // Success feedback will be cleared when starting next recording
-        } else {
-          // If not acceptable, show audio playback for review
-          setShowAudioPlayback(true);
-        }
-      } catch (error) {
-        console.error("❌ Error processing speech:", error);
-        // On error, show audio playback so user can try again
-        setShowAudioPlayback(true);
-      } finally {
-        setIsProcessing(false);
+    // Wait for audio blob to be ready
+    const checkForAudio = () => {
+      if (audioBlob && audioBlob.size > 0) {
+        console.log("🎵 Audio blob ready, starting review");
+        setAppState("reviewing");
+      } else {
+        // Keep checking until audio blob is ready
+        setTimeout(checkForAudio, 100);
       }
     };
 
-    processAudio();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [
-    audioBlob,
-    currentPhrase,
-    isAudioRecording,
-    isProcessing,
-    convertToBase64,
-    processedAudioBlob,
-    currentRecordingSession,
-  ]);
+    checkForAudio();
+  };
 
-  // Handle re-recording from review mode
+  // BULLETPROOF AUDIO PROCESSING
+  const handleProcessAudio = async (): Promise<void> => {
+    if (!audioBlob || !currentPhrase || appState !== "reviewing") {
+      console.log("🚫 Cannot process - invalid state or missing data");
+      return;
+    }
+
+    console.log("🔄 Processing audio...");
+    setAppState("processing");
+
+    try {
+      // Convert audio to base64
+      const base64Audio = await convertToBase64();
+      console.log("📦 Audio converted to base64, length:", base64Audio.length);
+
+      // Send to speech-to-text API
+      const response = await fetch("/api/speech-to-text", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          audioData: base64Audio,
+          mimeType: audioBlob.type,
+        }),
+      });
+
+      console.log("📤 API response status:", response.status);
+
+      if (!response.ok) {
+        throw new Error("Failed to process speech");
+      }
+
+      const { transcription } = await response.json();
+      console.log("🗣️ Transcription received:", transcription);
+
+      // Compare with target phrase
+      const feedback = getPronunciationFeedback(
+        transcription,
+        currentPhrase.text
+      );
+      console.log("📊 Feedback:", feedback);
+
+      const newResult: PronunciationResult = {
+        transcription,
+        similarity: feedback.similarity,
+        isAcceptable: feedback.isAcceptable,
+        suggestion: feedback.suggestions[0] || "Keep practicing!",
+      };
+
+      setResult(newResult);
+      setAttempts((prev) => prev + 1);
+
+      // Update repetition count if pronunciation is acceptable
+      if (feedback.isAcceptable) {
+        setScore((prev) => prev + 1);
+        const newSuccessfulReps = successfulReps + 1;
+        setSuccessfulReps(newSuccessfulReps);
+
+        if (newSuccessfulReps >= requiredReps) {
+          setShowCelebration(true);
+          setAppState("success");
+        } else {
+          setAppState("success");
+        }
+      } else {
+        setAppState("success");
+      }
+    } catch (error) {
+      console.error("❌ Error processing speech:", error);
+      setAppState("error");
+      alert("Failed to process your speech. Please try again.");
+    }
+  };
+
+  // BULLETPROOF RE-RECORDING
   const handleRerecord = () => {
-    setShowAudioPlayback(false);
+    console.log("🔄 Starting re-recording...");
+    setAppState("idle");
     setResult(null);
-    setProcessedAudioBlob(null); // Reset processed blob for re-recording
-    setCurrentRecordingSession(null); // Reset recording session
     resetRecording();
   };
 
-  // Handle manual processing from review mode
+  // BULLETPROOF MANUAL PROCESSING FROM REVIEW
   const handleProcessFromReview = async () => {
-    setShowAudioPlayback(false);
-    // The result is already set, just update the repetition count if acceptable
     if (result && result.isAcceptable) {
       setScore((prev) => prev + 1);
       const newSuccessfulReps = successfulReps + 1;
@@ -350,48 +307,8 @@ export default function PronunciationPractice() {
       if (newSuccessfulReps >= requiredReps) {
         setShowCelebration(true);
       }
-
-      // Clear result after a short delay
-      setTimeout(() => {
-        setResult(null);
-      }, 3000);
     }
-  };
-
-  // Get difficulty color for badges
-  const getDifficultyColor = (difficulty: string) => {
-    switch (difficulty) {
-      case "beginner":
-        return "bg-green-100 text-green-700 border-green-200";
-      case "intermediate":
-        return "bg-yellow-100 text-yellow-700 border-yellow-200";
-      case "advanced":
-        return "bg-red-100 text-red-700 border-red-200";
-      default:
-        return "bg-gray-100 text-gray-700 border-gray-200";
-    }
-  };
-
-  // Get emotional progression icons
-  const getEmotionIcon = (index: number, isCompleted: boolean) => {
-    if (!isCompleted) {
-      return <Circle className="w-6 h-6 text-muted-foreground/40" />;
-    }
-
-    switch (index) {
-      case 0:
-        return <Smile className="w-6 h-6 text-primary" />;
-      case 1:
-        return <Laugh className="w-6 h-6 text-primary" />;
-      case 2:
-        return <Star className="w-6 h-6 text-primary" />;
-      case 3:
-        return <Trophy className="w-6 h-6 text-primary" />;
-      case 4:
-        return <PartyPopper className="w-6 h-6 text-primary" />;
-      default:
-        return <Check className="w-6 h-6 text-primary" />;
-    }
+    setAppState("success");
   };
 
   // Testing mode functions
@@ -401,14 +318,14 @@ export default function PronunciationPractice() {
       setUploadedFile(file);
       const url = URL.createObjectURL(file);
       setUploadedAudioUrl(url);
-      setRawTranscription(""); // Clear previous transcription
+      setRawTranscription("");
     }
   };
 
   const handleTestUploadedFile = async (): Promise<void> => {
     if (!uploadedFile) return;
 
-    setIsProcessing(true);
+    setAppState("processing");
     setRawTranscription("");
     try {
       console.log("🎤 Starting file upload test...");
@@ -475,8 +392,106 @@ export default function PronunciationPractice() {
         }`
       );
     } finally {
-      setIsProcessing(false);
+      setAppState("idle");
       console.log("🏁 Processing complete");
+    }
+  };
+
+  // Get difficulty color for badges
+  const getDifficultyColor = (difficulty: string) => {
+    switch (difficulty) {
+      case "beginner":
+        return "bg-green-100 text-green-700 border-green-200";
+      case "intermediate":
+        return "bg-yellow-100 text-yellow-700 border-yellow-200";
+      case "advanced":
+        return "bg-red-100 text-red-700 border-red-200";
+      default:
+        return "bg-gray-100 text-gray-700 border-gray-200";
+    }
+  };
+
+  // Get emotional progression icons
+  const getEmotionIcon = (index: number, isCompleted: boolean) => {
+    if (!isCompleted) {
+      return <Circle className="w-6 h-6 text-muted-foreground/40" />;
+    }
+
+    switch (index) {
+      case 0:
+        return <Smile className="w-6 h-6 text-primary" />;
+      case 1:
+        return <Laugh className="w-6 h-6 text-primary" />;
+      case 2:
+        return <Star className="w-6 h-6 text-primary" />;
+      case 3:
+        return <Trophy className="w-6 h-6 text-primary" />;
+      case 4:
+        return <PartyPopper className="w-6 h-6 text-primary" />;
+      default:
+        return <Check className="w-6 h-6 text-primary" />;
+    }
+  };
+
+  // BULLETPROOF BUTTON STATE LOGIC
+  const getButtonState = () => {
+    switch (appState) {
+      case "idle":
+        return {
+          text: "Record",
+          icon: <Mic className="w-4 md:w-5 h-4 md:h-5 mr-2" />,
+          disabled: false,
+          onClick: handleStartRecording,
+          className: "bg-[#5BA3E8] hover:bg-[#5BA3E8]/90 text-white",
+        };
+      case "recording":
+        return {
+          text: "Stop",
+          icon: <MicOff className="w-4 md:w-5 h-4 md:h-5 mr-2" />,
+          disabled: false,
+          onClick: handleStopRecording,
+          className: "bg-destructive hover:bg-destructive/90",
+        };
+      case "reviewing":
+        return {
+          text: "Processing...",
+          icon: null,
+          disabled: true,
+          onClick: () => {},
+          className: "bg-gray-500",
+        };
+      case "processing":
+        return {
+          text: "Processing...",
+          icon: null,
+          disabled: true,
+          onClick: () => {},
+          className: "bg-gray-500",
+        };
+      case "success":
+        return {
+          text: "Record",
+          icon: <Mic className="w-4 md:w-5 h-4 md:h-5 mr-2" />,
+          disabled: false,
+          onClick: handleStartRecording,
+          className: "bg-[#5BA3E8] hover:bg-[#5BA3E8]/90 text-white",
+        };
+      case "error":
+        return {
+          text: "Record",
+          icon: <Mic className="w-4 md:w-5 h-4 md:h-5 mr-2" />,
+          disabled: false,
+          onClick: handleStartRecording,
+          className: "bg-[#5BA3E8] hover:bg-[#5BA3E8]/90 text-white",
+        };
+      default:
+        return {
+          text: "Record",
+          icon: <Mic className="w-4 md:w-5 h-4 md:h-5 mr-2" />,
+          disabled: false,
+          onClick: handleStartRecording,
+          className: "bg-[#5BA3E8] hover:bg-[#5BA3E8]/90 text-white",
+        };
     }
   };
 
@@ -501,6 +516,8 @@ export default function PronunciationPractice() {
       </div>
     );
   }
+
+  const buttonState = getButtonState();
 
   return (
     <div className="max-w-2xl mx-auto space-y-4 md:space-y-6">
@@ -576,11 +593,13 @@ export default function PronunciationPractice() {
 
                 <Button
                   onClick={handleTestUploadedFile}
-                  disabled={isProcessing}
+                  disabled={appState === "processing"}
                   size="lg"
                   className="w-full bg-blue-600 hover:bg-blue-700"
                 >
-                  {isProcessing ? "Processing..." : "Test Speech-to-Text"}
+                  {appState === "processing"
+                    ? "Processing..."
+                    : "Test Speech-to-Text"}
                 </Button>
               </div>
             )}
@@ -737,7 +756,7 @@ export default function PronunciationPractice() {
         )}
 
         {/* Recording timer */}
-        {isAudioRecording && (
+        {appState === "recording" && (
           <div className="text-center">
             <div className="text-2xl font-mono text-[#5BA3E8]">
               {Math.floor(recordingTime / 60)}:
@@ -753,36 +772,19 @@ export default function PronunciationPractice() {
         <div className="flex items-center justify-center gap-3 md:gap-4">
           <Button
             size="lg"
-            onClick={
-              isAudioRecording ? handleStopRecording : handleStartRecording
-            }
-            disabled={showCelebration || isProcessing || showAudioPlayback}
-            className={`flex-1 md:w-40 h-12 md:h-14 text-base md:text-lg font-semibold transition-all ${
-              isAudioRecording
-                ? "bg-destructive hover:bg-destructive/90"
-                : "bg-[#5BA3E8] hover:bg-[#5BA3E8]/90 text-white"
-            }`}
+            onClick={buttonState.onClick}
+            disabled={buttonState.disabled}
+            className={`flex-1 md:w-40 h-12 md:h-14 text-base md:text-lg font-semibold transition-all ${buttonState.className}`}
           >
-            {isProcessing ? (
-              "Processing..."
-            ) : isAudioRecording ? (
-              <>
-                <MicOff className="w-4 md:w-5 h-4 md:h-5 mr-2" />
-                Stop
-              </>
-            ) : (
-              <>
-                <Mic className="w-4 md:w-5 h-4 md:h-5 mr-2" />
-                Record
-              </>
-            )}
+            {buttonState.icon}
+            {buttonState.text}
           </Button>
 
           <Button
             size="lg"
             variant="outline"
             onClick={handleNextPhrase}
-            disabled={isAudioRecording || showAudioPlayback}
+            disabled={appState === "recording" || appState === "processing"}
             className="flex-1 md:w-40 h-12 md:h-14 text-base md:text-lg font-semibold border-2 border-[#5BA3E8] text-[#5BA3E8] hover:bg-[#5BA3E8]/10 bg-transparent"
           >
             <SkipForward className="w-4 md:w-5 h-4 md:h-5 mr-2" />
@@ -790,8 +792,8 @@ export default function PronunciationPractice() {
           </Button>
         </div>
 
-        {/* Audio Playback Section - Only shown when pronunciation needs review */}
-        {showAudioPlayback && audioUrl && result && !result.isAcceptable && (
+        {/* Audio Review Section */}
+        {appState === "reviewing" && audioUrl && (
           <div className="space-y-4 pt-4 border-t-2">
             <div className="text-center space-y-4">
               <h3 className="text-lg font-semibold text-foreground">
@@ -801,14 +803,14 @@ export default function PronunciationPractice() {
                 <audio controls src={audioUrl} className="w-full max-w-md" />
               </div>
               <p className="text-sm text-muted-foreground">
-                Listen to your recording and try to improve your pronunciation.
+                Listen to your recording. Ready to submit?
               </p>
               <div className="flex gap-3 justify-center">
                 <Button
-                  onClick={handleProcessFromReview}
+                  onClick={handleProcessAudio}
                   className="bg-green-600 hover:bg-green-700 text-white"
                 >
-                  ✅ Accept This Attempt
+                  ✅ Submit for Review
                 </Button>
                 <Button
                   onClick={handleRerecord}
@@ -822,21 +824,8 @@ export default function PronunciationPractice() {
           </div>
         )}
 
-        {/* Celebration display */}
-        {showCelebration && (
-          <div className="p-4 md:p-6 bg-[#5BA3E8]/10 rounded-xl border-2 border-[#5BA3E8] text-center space-y-2 animate-in fade-in slide-in-from-bottom-4">
-            <p className="text-xl md:text-2xl font-bold text-[#5BA3E8]">
-              🎉 Phrase Mastered!
-            </p>
-            <p className="text-sm md:text-base text-muted-foreground">
-              You&apos;ve successfully repeated this phrase {requiredReps}{" "}
-              times. Ready for the next one?
-            </p>
-          </div>
-        )}
-
         {/* Results display */}
-        {result && !showCelebration && !showAudioPlayback && (
+        {result && appState === "success" && (
           <div className="space-y-4 pt-4 border-t-2">
             {result.isAcceptable ? (
               // Success feedback - more prominent
@@ -853,7 +842,8 @@ export default function PronunciationPractice() {
                     Similarity: {Math.round(result.similarity * 100)}%
                   </span>
                   <span className="text-green-600 dark:text-green-400">
-                    Progress: {successfulReps + 1}/{requiredReps}
+                    Progress: {successfulReps + (result.isAcceptable ? 1 : 0)}/
+                    {requiredReps}
                   </span>
                 </div>
               </div>
@@ -884,8 +874,37 @@ export default function PronunciationPractice() {
                     </p>
                   </div>
                 </div>
+
+                <div className="flex gap-3 justify-center">
+                  <Button
+                    onClick={handleProcessFromReview}
+                    className="bg-green-600 hover:bg-green-700 text-white"
+                  >
+                    ✅ Accept This Attempt
+                  </Button>
+                  <Button
+                    onClick={handleRerecord}
+                    variant="outline"
+                    className="border-red-500 text-red-600 hover:bg-red-50"
+                  >
+                    🔄 Record Again
+                  </Button>
+                </div>
               </div>
             )}
+          </div>
+        )}
+
+        {/* Celebration display */}
+        {showCelebration && (
+          <div className="p-4 md:p-6 bg-[#5BA3E8]/10 rounded-xl border-2 border-[#5BA3E8] text-center space-y-2 animate-in fade-in slide-in-from-bottom-4">
+            <p className="text-xl md:text-2xl font-bold text-[#5BA3E8]">
+              🎉 Phrase Mastered!
+            </p>
+            <p className="text-sm md:text-base text-muted-foreground">
+              You&apos;ve successfully repeated this phrase {requiredReps}{" "}
+              times. Ready for the next one?
+            </p>
           </div>
         )}
       </Card>

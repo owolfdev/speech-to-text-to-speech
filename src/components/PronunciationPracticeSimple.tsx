@@ -32,15 +32,11 @@ import { useAudioRecorder } from "@/hooks/useAudioRecorder";
 import { getRandomPhrase, type FrenchPhrase } from "@/data/french-phrases";
 import { getPronunciationFeedback } from "@/lib/text-comparison";
 
-interface PronunciationResult {
-  transcription: string;
-  similarity: number;
-  isAcceptable: boolean;
-  suggestion: string;
-}
+// SIMPLE STATE MACHINE
+type AppState = "idle" | "recording" | "processing" | "showingResult";
 
-export default function PronunciationPractice() {
-  // Core state from refined interface
+export default function PronunciationPracticeSimple() {
+  // Core state
   const [currentPhraseIndex, setCurrentPhraseIndex] = useState(0);
   const [successfulReps, setSuccessfulReps] = useState(0);
   const [requiredReps] = useState(5);
@@ -48,14 +44,16 @@ export default function PronunciationPractice() {
   const [isPlayingAudio, setIsPlayingAudio] = useState(false);
   const [showCelebration, setShowCelebration] = useState(false);
   const [permissionError, setPermissionError] = useState<string | null>(null);
-  const [showAudioPlayback, setShowAudioPlayback] = useState(false);
-
-  // Enhanced state for our existing functionality
   const [currentPhrase, setCurrentPhrase] = useState<FrenchPhrase | null>(null);
-  const [result, setResult] = useState<PronunciationResult | null>(null);
-  const [isProcessing, setIsProcessing] = useState(false);
   const [score, setScore] = useState(0);
   const [attempts, setAttempts] = useState(0);
+
+  // Simple feedback state
+  const [lastResult, setLastResult] = useState<{
+    success: boolean;
+    message: string;
+    transcription?: string;
+  } | null>(null);
 
   // Testing mode state
   const [showTestingMode, setShowTestingMode] = useState(false);
@@ -63,27 +61,17 @@ export default function PronunciationPractice() {
   const [uploadedAudioUrl, setUploadedAudioUrl] = useState<string | null>(null);
   const [rawTranscription, setRawTranscription] = useState<string>("");
 
-  // Prevent reprocessing the same audio blob
-  const [processedAudioBlob, setProcessedAudioBlob] = useState<Blob | null>(
-    null
-  );
-
-  // Track recording session to ensure we only process current session
-  const [currentRecordingSession, setCurrentRecordingSession] = useState<
-    string | null
-  >(null);
+  // SIMPLE STATE MACHINE
+  const [appState, setAppState] = useState<AppState>("idle");
 
   // Use our existing audio recorder hook
   const {
     isRecording: isAudioRecording,
-    isPaused,
     recordingTime,
     audioBlob,
-    audioUrl,
     startRecording,
     stopRecording,
     resetRecording,
-    convertToBase64,
   } = useAudioRecorder();
 
   // Load initial phrase
@@ -92,38 +80,17 @@ export default function PronunciationPractice() {
     setCurrentPhrase(newPhrase);
   }, []);
 
-  // Debug logging for state changes
+  // Debug logging
   useEffect(() => {
-    const buttonDisabled = showCelebration || isProcessing || showAudioPlayback;
-    console.log("🔄 State update:", {
+    console.log("🔄 App State:", appState, {
       isAudioRecording,
       audioBlob: audioBlob
         ? `${audioBlob.type} (${audioBlob.size} bytes)`
         : null,
-      audioUrl: audioUrl ? "Available" : null,
-      isProcessing,
-      showAudioPlayback: showAudioPlayback ? "True" : "False",
-      showCelebration: showCelebration ? "True" : "False",
-      processedAudioBlob: processedAudioBlob ? "Set" : "Null",
-      recordingSession: currentRecordingSession || "Null",
-      buttonDisabled: buttonDisabled ? "DISABLED" : "ENABLED",
-      result: result
-        ? `${result.isAcceptable ? "Acceptable" : "Needs review"} (${Math.round(
-            result.similarity * 100
-          )}%)`
-        : null,
+      successfulReps,
+      requiredReps,
     });
-  }, [
-    isAudioRecording,
-    audioBlob,
-    audioUrl,
-    isProcessing,
-    showAudioPlayback,
-    processedAudioBlob,
-    currentRecordingSession,
-    showCelebration,
-    result,
-  ]);
+  }, [appState, isAudioRecording, audioBlob, successfulReps, requiredReps]);
 
   // Handle audio playback using native TTS
   const handlePlayAudio = () => {
@@ -149,14 +116,15 @@ export default function PronunciationPractice() {
     if ("speechSynthesis" in window) {
       window.speechSynthesis.cancel();
     }
+
+    // Reset everything for new phrase
+    setAppState("idle");
     setShowCelebration(false);
+    setLastResult(null);
     setCurrentPhraseIndex((prev) => prev + 1);
     setSuccessfulReps(0);
-    setResult(null);
     setShowTranslation(false);
     setIsPlayingAudio(false);
-    setProcessedAudioBlob(null); // Reset processed blob for new phrase
-    setCurrentRecordingSession(null); // Reset recording session
 
     // Load new random phrase
     const newPhrase = getRandomPhrase("beginner");
@@ -165,17 +133,20 @@ export default function PronunciationPractice() {
     resetRecording();
   };
 
-  // Handle recording start with our existing error handling
+  // SIMPLE RECORDING START
   const handleStartRecording = async (): Promise<void> => {
     try {
       console.log("🎤 Starting recording...");
+
+      // Clear any previous state
       setPermissionError(null);
-      setShowAudioPlayback(false); // Ensure audio playback is cleared
-      setShowCelebration(false); // Ensure celebration is cleared
-      setResult(null);
-      setProcessedAudioBlob(null); // Reset processed blob for new recording
-      setCurrentRecordingSession(Math.random().toString(36)); // Create unique session ID
+      setLastResult(null);
+      setAppState("idle");
+
+      // Start recording
       await startRecording();
+      setAppState("recording");
+
       console.log("✅ Recording started successfully");
     } catch (error) {
       const err = error as Error;
@@ -203,194 +174,165 @@ export default function PronunciationPractice() {
     }
   };
 
-  // Handle recording stop - automatically process audio
-  const handleStopRecording = () => {
+  // SIMPLE RECORDING STOP + AUTO PROCESS
+  const handleStopRecording = async () => {
     console.log("🛑 Stopping recording...");
+
+    // Stop recording
     stopRecording();
+
+    // Set processing state immediately
+    setAppState("processing");
+    console.log("🔄 Waiting for audio blob...");
   };
 
-  // Process audio when audioBlob becomes available
+  // Listen for audio blob changes and auto-process when available
   useEffect(() => {
-    const processAudio = async () => {
-      if (!audioBlob || !currentPhrase || isAudioRecording || isProcessing)
-        return;
-
-      // Prevent reprocessing the same audio blob
-      if (processedAudioBlob === audioBlob) {
-        console.log("🚫 Skipping - already processed this audio blob");
-        return;
-      }
-
-      // Only process if we're not currently recording and have a valid blob
-      if (audioBlob.size === 0) {
-        console.log("🚫 Skipping - empty audio blob");
-        return;
-      }
-
-      // Only process if we have a current recording session
-      if (!currentRecordingSession) {
-        console.log("🚫 Skipping - no active recording session");
-        return;
-      }
-
+    if (appState === "processing" && audioBlob && audioBlob.size > 0) {
+      console.log("🎵 Audio blob available, processing...");
       console.log(
-        "🎵 Audio blob available, processing...",
-        audioBlob.type,
-        audioBlob.size
+        "🔍 Audio blob:",
+        `${audioBlob.type} (${audioBlob.size} bytes)`
       );
+      processAudioAutomatically(audioBlob);
+    }
+  }, [audioBlob, appState]);
 
-      // Mark this blob as being processed
-      setProcessedAudioBlob(audioBlob);
-      setIsProcessing(true);
+  // SIMPLE AUTO PROCESSING
+  const processAudioAutomatically = async (blob: Blob): Promise<void> => {
+    console.log("🔄 processAudioAutomatically called");
+    console.log(
+      "🔍 Audio blob:",
+      blob ? `${blob.type} (${blob.size} bytes)` : "No blob"
+    );
+    console.log("🔍 Current phrase:", currentPhrase?.text);
 
-      // Clear the recording session to prevent reprocessing
-      setCurrentRecordingSession(null);
+    if (!blob || !currentPhrase) {
+      console.log("🚫 Cannot process - missing data");
+      setAppState("idle");
+      setLastResult({
+        success: false,
+        message: "Missing audio or phrase data. Please try again.",
+      });
+      return;
+    }
 
-      try {
-        // Convert audio to base64
-        const base64Audio = await convertToBase64();
-        console.log(
-          "📦 Audio converted to base64, length:",
-          base64Audio.length
-        );
+    console.log("🔄 Auto-processing audio...");
 
-        // Send to speech-to-text API with MIME type for mobile compatibility
-        const response = await fetch("/api/speech-to-text", {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({
-            audioData: base64Audio,
-            mimeType: audioBlob.type,
-          }),
+    try {
+      console.log("🔄 Step 1: Converting audio to base64...");
+
+      // Convert audio to base64
+      const base64Audio = await new Promise<string>((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onloadend = () => {
+          const base64 = reader.result as string;
+          const base64Data = base64.split(",")[1];
+          console.log(
+            "📦 Audio converted to base64, length:",
+            base64Data.length
+          );
+          resolve(base64Data);
+        };
+        reader.onerror = (error) => {
+          console.error("❌ FileReader error:", error);
+          reject(error);
+        };
+        reader.readAsDataURL(blob);
+      });
+
+      console.log("✅ Step 1 complete: Audio converted to base64");
+
+      console.log("🔄 Step 2: Sending to API...");
+
+      // Send to speech-to-text API
+      const response = await fetch("/api/speech-to-text", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          audioData: base64Audio,
+          mimeType: blob.type,
+        }),
+      });
+
+      console.log("📤 API response status:", response.status);
+
+      if (!response.ok) {
+        const errorText = await response.text();
+        console.error("❌ API error response:", errorText);
+        throw new Error(`API error: ${response.status} - ${errorText}`);
+      }
+
+      console.log("✅ Step 2 complete: API call successful");
+
+      const responseData = await response.json();
+      console.log("📋 Full API response:", responseData);
+
+      const { transcription } = responseData;
+      console.log("🗣️ Transcription received:", transcription);
+
+      // Compare with target phrase
+      const feedback = getPronunciationFeedback(
+        transcription,
+        currentPhrase.text
+      );
+      console.log("📊 Feedback:", feedback);
+
+      setAttempts((prev) => prev + 1);
+
+      // SIMPLE LOGIC: If acceptable, add progress
+      if (feedback.isAcceptable) {
+        setScore((prev) => prev + 1);
+        const newSuccessfulReps = successfulReps + 1;
+        setSuccessfulReps(newSuccessfulReps);
+
+        setLastResult({
+          success: true,
+          message: `Great! Progress: ${newSuccessfulReps}/${requiredReps}`,
+          transcription,
         });
 
-        console.log("📤 API response status:", response.status);
-
-        if (!response.ok) {
-          throw new Error("Failed to process speech");
+        if (newSuccessfulReps >= requiredReps) {
+          setShowCelebration(true);
         }
-
-        const { transcription } = await response.json();
-        console.log("🗣️ Transcription received:", transcription);
-
-        // Compare with target phrase using our existing algorithm
-        const feedback = getPronunciationFeedback(
+      } else {
+        // Not acceptable - just show failure message
+        setLastResult({
+          success: false,
+          message: "Keep practicing!",
           transcription,
-          currentPhrase.text
-        );
-
-        console.log("📊 Feedback:", feedback);
-
-        const newResult: PronunciationResult = {
-          transcription,
-          similarity: feedback.similarity,
-          isAcceptable: feedback.isAcceptable,
-          suggestion: feedback.suggestions[0] || "Keep practicing!",
-        };
-
-        setResult(newResult);
-        setAttempts((prev) => prev + 1);
-
-        // If pronunciation is acceptable, automatically add progress
-        if (feedback.isAcceptable) {
-          setScore((prev) => prev + 1);
-          const newSuccessfulReps = successfulReps + 1;
-          setSuccessfulReps(newSuccessfulReps);
-
-          if (newSuccessfulReps >= requiredReps) {
-            setShowCelebration(true);
-          }
-
-          // Success feedback will be cleared when starting next recording
-        } else {
-          // If not acceptable, show audio playback for review
-          setShowAudioPlayback(true);
-        }
-      } catch (error) {
-        console.error("❌ Error processing speech:", error);
-        // On error, show audio playback so user can try again
-        setShowAudioPlayback(true);
-      } finally {
-        setIsProcessing(false);
-      }
-    };
-
-    processAudio();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [
-    audioBlob,
-    currentPhrase,
-    isAudioRecording,
-    isProcessing,
-    convertToBase64,
-    processedAudioBlob,
-    currentRecordingSession,
-  ]);
-
-  // Handle re-recording from review mode
-  const handleRerecord = () => {
-    setShowAudioPlayback(false);
-    setResult(null);
-    setProcessedAudioBlob(null); // Reset processed blob for re-recording
-    setCurrentRecordingSession(null); // Reset recording session
-    resetRecording();
-  };
-
-  // Handle manual processing from review mode
-  const handleProcessFromReview = async () => {
-    setShowAudioPlayback(false);
-    // The result is already set, just update the repetition count if acceptable
-    if (result && result.isAcceptable) {
-      setScore((prev) => prev + 1);
-      const newSuccessfulReps = successfulReps + 1;
-      setSuccessfulReps(newSuccessfulReps);
-
-      if (newSuccessfulReps >= requiredReps) {
-        setShowCelebration(true);
+        });
       }
 
-      // Clear result after a short delay
+      // CLEAR AUDIO DATA IMMEDIATELY after processing
+      resetRecording();
+
+      // Show result state
+      setAppState("showingResult");
+
+      // Reset to idle after a short delay to show result
       setTimeout(() => {
-        setResult(null);
+        setAppState("idle");
+        setLastResult(null);
       }, 3000);
-    }
-  };
+    } catch (error) {
+      console.error("❌ Error processing speech:", error);
+      setLastResult({
+        success: false,
+        message: "Processing failed. Try again.",
+      });
 
-  // Get difficulty color for badges
-  const getDifficultyColor = (difficulty: string) => {
-    switch (difficulty) {
-      case "beginner":
-        return "bg-green-100 text-green-700 border-green-200";
-      case "intermediate":
-        return "bg-yellow-100 text-yellow-700 border-yellow-200";
-      case "advanced":
-        return "bg-red-100 text-red-700 border-red-200";
-      default:
-        return "bg-gray-100 text-gray-700 border-gray-200";
-    }
-  };
+      // Clear audio data and reset
+      resetRecording();
+      setAppState("showingResult");
 
-  // Get emotional progression icons
-  const getEmotionIcon = (index: number, isCompleted: boolean) => {
-    if (!isCompleted) {
-      return <Circle className="w-6 h-6 text-muted-foreground/40" />;
-    }
-
-    switch (index) {
-      case 0:
-        return <Smile className="w-6 h-6 text-primary" />;
-      case 1:
-        return <Laugh className="w-6 h-6 text-primary" />;
-      case 2:
-        return <Star className="w-6 h-6 text-primary" />;
-      case 3:
-        return <Trophy className="w-6 h-6 text-primary" />;
-      case 4:
-        return <PartyPopper className="w-6 h-6 text-primary" />;
-      default:
-        return <Check className="w-6 h-6 text-primary" />;
+      // Reset to idle after delay
+      setTimeout(() => {
+        setAppState("idle");
+        setLastResult(null);
+      }, 3000);
     }
   };
 
@@ -401,14 +343,14 @@ export default function PronunciationPractice() {
       setUploadedFile(file);
       const url = URL.createObjectURL(file);
       setUploadedAudioUrl(url);
-      setRawTranscription(""); // Clear previous transcription
+      setRawTranscription("");
     }
   };
 
   const handleTestUploadedFile = async (): Promise<void> => {
     if (!uploadedFile) return;
 
-    setIsProcessing(true);
+    setAppState("processing");
     setRawTranscription("");
     try {
       console.log("🎤 Starting file upload test...");
@@ -475,8 +417,92 @@ export default function PronunciationPractice() {
         }`
       );
     } finally {
-      setIsProcessing(false);
+      setAppState("idle");
       console.log("🏁 Processing complete");
+    }
+  };
+
+  // Get difficulty color for badges
+  const getDifficultyColor = (difficulty: string) => {
+    switch (difficulty) {
+      case "beginner":
+        return "bg-green-100 text-green-700 border-green-200";
+      case "intermediate":
+        return "bg-yellow-100 text-yellow-700 border-yellow-200";
+      case "advanced":
+        return "bg-red-100 text-red-700 border-red-200";
+      default:
+        return "bg-gray-100 text-gray-700 border-gray-200";
+    }
+  };
+
+  // Get emotional progression icons
+  const getEmotionIcon = (index: number, isCompleted: boolean) => {
+    if (!isCompleted) {
+      return <Circle className="w-6 h-6 text-muted-foreground/40" />;
+    }
+
+    switch (index) {
+      case 0:
+        return <Smile className="w-6 h-6 text-primary" />;
+      case 1:
+        return <Laugh className="w-6 h-6 text-primary" />;
+      case 2:
+        return <Star className="w-6 h-6 text-primary" />;
+      case 3:
+        return <Trophy className="w-6 h-6 text-primary" />;
+      case 4:
+        return <PartyPopper className="w-6 h-6 text-primary" />;
+      default:
+        return <Check className="w-6 h-6 text-primary" />;
+    }
+  };
+
+  // SIMPLE BUTTON STATE LOGIC
+  const getButtonState = () => {
+    switch (appState) {
+      case "idle":
+        return {
+          text: "Record",
+          icon: <Mic className="w-4 md:w-5 h-4 md:h-5 mr-2" />,
+          disabled: false,
+          onClick: handleStartRecording,
+          className: "bg-[#5BA3E8] hover:bg-[#5BA3E8]/90 text-white",
+        };
+      case "recording":
+        return {
+          text: `Stop (${Math.floor(recordingTime / 60)}:${(recordingTime % 60)
+            .toString()
+            .padStart(2, "0")})`,
+          icon: <MicOff className="w-4 md:w-5 h-4 md:h-5 mr-2" />,
+          disabled: false,
+          onClick: handleStopRecording,
+          className: "bg-destructive hover:bg-destructive/90",
+        };
+      case "processing":
+        return {
+          text: "Processing...",
+          icon: null,
+          disabled: true,
+          onClick: () => {},
+          className: "bg-gray-500",
+        };
+      case "showingResult":
+        return {
+          text: "Get Ready",
+          icon: <Mic className="w-4 md:w-5 h-4 md:h-5 mr-2" />,
+          disabled: true,
+          onClick: () => {},
+          className: "bg-gray-400",
+        };
+      default:
+        return {
+          text: "Record",
+          icon: <Mic className="w-4 md:w-5 h-4 md:h-5 mr-2" />,
+          disabled: false,
+          onClick: handleStartRecording,
+          className: "bg-[#5BA3E8] hover:bg-[#5BA3E8]/90 text-white",
+        };
     }
   };
 
@@ -501,6 +527,8 @@ export default function PronunciationPractice() {
       </div>
     );
   }
+
+  const buttonState = getButtonState();
 
   return (
     <div className="max-w-2xl mx-auto space-y-4 md:space-y-6">
@@ -576,11 +604,13 @@ export default function PronunciationPractice() {
 
                 <Button
                   onClick={handleTestUploadedFile}
-                  disabled={isProcessing}
+                  disabled={appState === "processing"}
                   size="lg"
                   className="w-full bg-blue-600 hover:bg-blue-700"
                 >
-                  {isProcessing ? "Processing..." : "Test Speech-to-Text"}
+                  {appState === "processing"
+                    ? "Processing..."
+                    : "Test Speech-to-Text"}
                 </Button>
               </div>
             )}
@@ -736,53 +766,23 @@ export default function PronunciationPractice() {
           </div>
         )}
 
-        {/* Recording timer */}
-        {isAudioRecording && (
-          <div className="text-center">
-            <div className="text-2xl font-mono text-[#5BA3E8]">
-              {Math.floor(recordingTime / 60)}:
-              {(recordingTime % 60).toString().padStart(2, "0")}
-            </div>
-            <div className="text-sm text-muted-foreground">
-              {isPaused ? "Recording paused" : "Recording..."}
-            </div>
-          </div>
-        )}
-
         {/* Control buttons */}
         <div className="flex items-center justify-center gap-3 md:gap-4">
           <Button
             size="lg"
-            onClick={
-              isAudioRecording ? handleStopRecording : handleStartRecording
-            }
-            disabled={showCelebration || isProcessing || showAudioPlayback}
-            className={`flex-1 md:w-40 h-12 md:h-14 text-base md:text-lg font-semibold transition-all ${
-              isAudioRecording
-                ? "bg-destructive hover:bg-destructive/90"
-                : "bg-[#5BA3E8] hover:bg-[#5BA3E8]/90 text-white"
-            }`}
+            onClick={buttonState.onClick}
+            disabled={buttonState.disabled}
+            className={`flex-1 md:w-40 h-12 md:h-14 text-base md:text-lg font-semibold transition-all ${buttonState.className}`}
           >
-            {isProcessing ? (
-              "Processing..."
-            ) : isAudioRecording ? (
-              <>
-                <MicOff className="w-4 md:w-5 h-4 md:h-5 mr-2" />
-                Stop
-              </>
-            ) : (
-              <>
-                <Mic className="w-4 md:w-5 h-4 md:h-5 mr-2" />
-                Record
-              </>
-            )}
+            {buttonState.icon}
+            {buttonState.text}
           </Button>
 
           <Button
             size="lg"
             variant="outline"
             onClick={handleNextPhrase}
-            disabled={isAudioRecording || showAudioPlayback}
+            disabled={appState === "recording" || appState === "processing"}
             className="flex-1 md:w-40 h-12 md:h-14 text-base md:text-lg font-semibold border-2 border-[#5BA3E8] text-[#5BA3E8] hover:bg-[#5BA3E8]/10 bg-transparent"
           >
             <SkipForward className="w-4 md:w-5 h-4 md:h-5 mr-2" />
@@ -790,34 +790,40 @@ export default function PronunciationPractice() {
           </Button>
         </div>
 
-        {/* Audio Playback Section - Only shown when pronunciation needs review */}
-        {showAudioPlayback && audioUrl && result && !result.isAcceptable && (
-          <div className="space-y-4 pt-4 border-t-2">
-            <div className="text-center space-y-4">
-              <h3 className="text-lg font-semibold text-foreground">
-                🎧 Review Your Recording
+        {/* SIMPLE SUCCESS/FAILURE MESSAGE - Below buttons */}
+        {lastResult && (
+          <div
+            className={`p-4 rounded-xl border-2 ${
+              lastResult.success
+                ? "bg-green-50 dark:bg-green-900/20 border-green-200 dark:border-green-800"
+                : "bg-yellow-50 dark:bg-yellow-900/20 border-yellow-200 dark:border-yellow-800"
+            }`}
+          >
+            <div className="text-center space-y-2">
+              <div className="text-2xl">{lastResult.success ? "🎉" : "💪"}</div>
+              <h3
+                className={`font-bold ${
+                  lastResult.success
+                    ? "text-green-600 dark:text-green-400"
+                    : "text-yellow-600 dark:text-yellow-400"
+                }`}
+              >
+                {lastResult.success ? "Success!" : "Keep Practicing!"}
               </h3>
-              <div className="flex justify-center">
-                <audio controls src={audioUrl} className="w-full max-w-md" />
-              </div>
-              <p className="text-sm text-muted-foreground">
-                Listen to your recording and try to improve your pronunciation.
+              <p
+                className={`${
+                  lastResult.success
+                    ? "text-green-700 dark:text-green-300"
+                    : "text-yellow-700 dark:text-yellow-300"
+                }`}
+              >
+                {lastResult.message}
               </p>
-              <div className="flex gap-3 justify-center">
-                <Button
-                  onClick={handleProcessFromReview}
-                  className="bg-green-600 hover:bg-green-700 text-white"
-                >
-                  ✅ Accept This Attempt
-                </Button>
-                <Button
-                  onClick={handleRerecord}
-                  variant="outline"
-                  className="border-red-500 text-red-600 hover:bg-red-50"
-                >
-                  🔄 Record Again
-                </Button>
-              </div>
+              {lastResult.transcription && (
+                <p className="text-sm text-muted-foreground italic">
+                  You said: &quot;{lastResult.transcription}&quot;
+                </p>
+              )}
             </div>
           </div>
         )}
@@ -832,60 +838,6 @@ export default function PronunciationPractice() {
               You&apos;ve successfully repeated this phrase {requiredReps}{" "}
               times. Ready for the next one?
             </p>
-          </div>
-        )}
-
-        {/* Results display */}
-        {result && !showCelebration && !showAudioPlayback && (
-          <div className="space-y-4 pt-4 border-t-2">
-            {result.isAcceptable ? (
-              // Success feedback - more prominent
-              <div className="text-center space-y-4 p-4 bg-green-50 dark:bg-green-900/20 border-2 border-green-200 dark:border-green-800 rounded-xl">
-                <div className="text-4xl">🎉</div>
-                <h3 className="text-xl font-bold text-green-600 dark:text-green-400">
-                  Excellent Pronunciation!
-                </h3>
-                <p className="text-green-700 dark:text-green-300">
-                  You&apos;ve earned a progress point!
-                </p>
-                <div className="flex items-center justify-center gap-4 text-sm">
-                  <span className="text-green-600 dark:text-green-400">
-                    Similarity: {Math.round(result.similarity * 100)}%
-                  </span>
-                  <span className="text-green-600 dark:text-green-400">
-                    Progress: {successfulReps + 1}/{requiredReps}
-                  </span>
-                </div>
-              </div>
-            ) : (
-              // Needs improvement feedback
-              <div className="space-y-4">
-                <div className="space-y-2">
-                  <h3 className="text-xs md:text-sm font-semibold text-muted-foreground uppercase tracking-wide">
-                    Your Pronunciation
-                  </h3>
-                  <p className="text-base md:text-lg text-foreground p-3 md:p-4 bg-muted rounded-xl">
-                    {result.transcription}
-                  </p>
-                </div>
-
-                <div className="flex items-center justify-between p-3 md:p-4 bg-yellow-50 dark:bg-yellow-900/20 border-2 border-yellow-200 dark:border-yellow-800 rounded-xl">
-                  <div>
-                    <p className="text-xs md:text-sm text-muted-foreground mb-1">
-                      Similarity Score
-                    </p>
-                    <p className="text-xl md:text-2xl font-bold text-yellow-600">
-                      {Math.round(result.similarity * 100)}%
-                    </p>
-                  </div>
-                  <div className="text-right">
-                    <p className="text-base md:text-lg font-semibold text-yellow-600">
-                      {result.suggestion}
-                    </p>
-                  </div>
-                </div>
-              </div>
-            )}
           </div>
         )}
       </Card>
