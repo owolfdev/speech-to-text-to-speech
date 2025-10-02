@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { Button } from "@/components/ui/button";
 import {
   Card,
@@ -33,7 +33,7 @@ import { getRandomPhrase, type FrenchPhrase } from "@/data/french-phrases";
 import { getPronunciationFeedback } from "@/lib/text-comparison";
 
 // SIMPLE STATE MACHINE
-type AppState = "idle" | "recording" | "processing" | "showingResult";
+type AppState = "idle" | "recording" | "processing";
 
 export default function PronunciationPracticeSimple() {
   // Core state
@@ -63,6 +63,9 @@ export default function PronunciationPracticeSimple() {
 
   // SIMPLE STATE MACHINE
   const [appState, setAppState] = useState<AppState>("idle");
+
+  // Button animation state
+  const [buttonPressed, setButtonPressed] = useState(false);
 
   // Use our existing audio recorder hook
   const {
@@ -117,6 +120,8 @@ export default function PronunciationPracticeSimple() {
       window.speechSynthesis.cancel();
     }
 
+    handleButtonPress(); // Trigger animation
+
     // Reset everything for new phrase
     setAppState("idle");
     setShowCelebration(false);
@@ -133,14 +138,21 @@ export default function PronunciationPracticeSimple() {
     resetRecording();
   };
 
+  // Button press animation handler
+  const handleButtonPress = () => {
+    setButtonPressed(true);
+    setTimeout(() => setButtonPressed(false), 150);
+  };
+
   // SIMPLE RECORDING START
   const handleStartRecording = async (): Promise<void> => {
     try {
       console.log("🎤 Starting recording...");
+      handleButtonPress(); // Trigger animation
 
       // Clear any previous state
       setPermissionError(null);
-      setLastResult(null);
+      setLastResult(null); // Clear success/failure message when starting new recording
       setAppState("idle");
 
       // Start recording
@@ -177,6 +189,7 @@ export default function PronunciationPracticeSimple() {
   // SIMPLE RECORDING STOP + AUTO PROCESS
   const handleStopRecording = async () => {
     console.log("🛑 Stopping recording...");
+    handleButtonPress(); // Trigger animation
 
     // Stop recording
     stopRecording();
@@ -185,6 +198,135 @@ export default function PronunciationPracticeSimple() {
     setAppState("processing");
     console.log("🔄 Waiting for audio blob...");
   };
+
+  // SIMPLE AUTO PROCESSING
+  const processAudioAutomatically = useCallback(
+    async (blob: Blob): Promise<void> => {
+      console.log("🔄 processAudioAutomatically called");
+      console.log(
+        "🔍 Audio blob:",
+        blob ? `${blob.type} (${blob.size} bytes)` : "No blob"
+      );
+      console.log("🔍 Current phrase:", currentPhrase?.text);
+
+      if (!blob || !currentPhrase) {
+        console.log("🚫 Cannot process - missing data");
+        setAppState("idle");
+        setLastResult({
+          success: false,
+          message: "Missing audio or phrase data. Please try again.",
+        });
+        return;
+      }
+
+      console.log("🔄 Auto-processing audio...");
+
+      try {
+        console.log("🔄 Step 1: Converting audio to base64...");
+
+        // Convert audio to base64
+        const base64Audio = await new Promise<string>((resolve, reject) => {
+          const reader = new FileReader();
+          reader.onloadend = () => {
+            const base64 = reader.result as string;
+            const base64Data = base64.split(",")[1];
+            console.log(
+              "📦 Audio converted to base64, length:",
+              base64Data.length
+            );
+            resolve(base64Data);
+          };
+          reader.onerror = (error) => {
+            console.error("❌ FileReader error:", error);
+            reject(error);
+          };
+          reader.readAsDataURL(blob);
+        });
+
+        console.log("✅ Step 1 complete: Audio converted to base64");
+
+        console.log("🔄 Step 2: Sending to API...");
+
+        // Send to speech-to-text API
+        const response = await fetch("/api/speech-to-text", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            audioData: base64Audio,
+            mimeType: blob.type,
+          }),
+        });
+
+        console.log("📤 API response status:", response.status);
+
+        if (!response.ok) {
+          const errorText = await response.text();
+          console.error("❌ API error response:", errorText);
+          throw new Error(`API error: ${response.status} - ${errorText}`);
+        }
+
+        console.log("✅ Step 2 complete: API call successful");
+
+        const responseData = await response.json();
+        console.log("📋 Full API response:", responseData);
+
+        const { transcription } = responseData;
+        console.log("🗣️ Transcription received:", transcription);
+
+        // Compare with target phrase
+        const feedback = getPronunciationFeedback(
+          transcription,
+          currentPhrase.text
+        );
+        console.log("📊 Feedback:", feedback);
+
+        setAttempts((prev) => prev + 1);
+
+        // SIMPLE LOGIC: If acceptable, add progress
+        if (feedback.isAcceptable) {
+          setScore((prev) => prev + 1);
+          const newSuccessfulReps = successfulReps + 1;
+          setSuccessfulReps(newSuccessfulReps);
+
+          setLastResult({
+            success: true,
+            message: `Great! Progress: ${newSuccessfulReps}/${requiredReps}`,
+            transcription,
+          });
+
+          if (newSuccessfulReps >= requiredReps) {
+            setShowCelebration(true);
+          }
+        } else {
+          // Not acceptable - just show failure message
+          setLastResult({
+            success: false,
+            message: "Keep practicing!",
+            transcription,
+          });
+        }
+
+        // CLEAR AUDIO DATA IMMEDIATELY after processing
+        resetRecording();
+
+        // Go straight to idle state - message stays until user clicks record
+        setAppState("idle");
+      } catch (error) {
+        console.error("❌ Error processing speech:", error);
+        setLastResult({
+          success: false,
+          message: "Processing failed. Try again.",
+        });
+
+        // Clear audio data and reset
+        resetRecording();
+        setAppState("idle");
+      }
+    },
+    [currentPhrase, successfulReps, requiredReps, resetRecording]
+  );
 
   // Listen for audio blob changes and auto-process when available
   useEffect(() => {
@@ -196,145 +338,7 @@ export default function PronunciationPracticeSimple() {
       );
       processAudioAutomatically(audioBlob);
     }
-  }, [audioBlob, appState]);
-
-  // SIMPLE AUTO PROCESSING
-  const processAudioAutomatically = async (blob: Blob): Promise<void> => {
-    console.log("🔄 processAudioAutomatically called");
-    console.log(
-      "🔍 Audio blob:",
-      blob ? `${blob.type} (${blob.size} bytes)` : "No blob"
-    );
-    console.log("🔍 Current phrase:", currentPhrase?.text);
-
-    if (!blob || !currentPhrase) {
-      console.log("🚫 Cannot process - missing data");
-      setAppState("idle");
-      setLastResult({
-        success: false,
-        message: "Missing audio or phrase data. Please try again.",
-      });
-      return;
-    }
-
-    console.log("🔄 Auto-processing audio...");
-
-    try {
-      console.log("🔄 Step 1: Converting audio to base64...");
-
-      // Convert audio to base64
-      const base64Audio = await new Promise<string>((resolve, reject) => {
-        const reader = new FileReader();
-        reader.onloadend = () => {
-          const base64 = reader.result as string;
-          const base64Data = base64.split(",")[1];
-          console.log(
-            "📦 Audio converted to base64, length:",
-            base64Data.length
-          );
-          resolve(base64Data);
-        };
-        reader.onerror = (error) => {
-          console.error("❌ FileReader error:", error);
-          reject(error);
-        };
-        reader.readAsDataURL(blob);
-      });
-
-      console.log("✅ Step 1 complete: Audio converted to base64");
-
-      console.log("🔄 Step 2: Sending to API...");
-
-      // Send to speech-to-text API
-      const response = await fetch("/api/speech-to-text", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          audioData: base64Audio,
-          mimeType: blob.type,
-        }),
-      });
-
-      console.log("📤 API response status:", response.status);
-
-      if (!response.ok) {
-        const errorText = await response.text();
-        console.error("❌ API error response:", errorText);
-        throw new Error(`API error: ${response.status} - ${errorText}`);
-      }
-
-      console.log("✅ Step 2 complete: API call successful");
-
-      const responseData = await response.json();
-      console.log("📋 Full API response:", responseData);
-
-      const { transcription } = responseData;
-      console.log("🗣️ Transcription received:", transcription);
-
-      // Compare with target phrase
-      const feedback = getPronunciationFeedback(
-        transcription,
-        currentPhrase.text
-      );
-      console.log("📊 Feedback:", feedback);
-
-      setAttempts((prev) => prev + 1);
-
-      // SIMPLE LOGIC: If acceptable, add progress
-      if (feedback.isAcceptable) {
-        setScore((prev) => prev + 1);
-        const newSuccessfulReps = successfulReps + 1;
-        setSuccessfulReps(newSuccessfulReps);
-
-        setLastResult({
-          success: true,
-          message: `Great! Progress: ${newSuccessfulReps}/${requiredReps}`,
-          transcription,
-        });
-
-        if (newSuccessfulReps >= requiredReps) {
-          setShowCelebration(true);
-        }
-      } else {
-        // Not acceptable - just show failure message
-        setLastResult({
-          success: false,
-          message: "Keep practicing!",
-          transcription,
-        });
-      }
-
-      // CLEAR AUDIO DATA IMMEDIATELY after processing
-      resetRecording();
-
-      // Show result state
-      setAppState("showingResult");
-
-      // Reset to idle after a short delay to show result
-      setTimeout(() => {
-        setAppState("idle");
-        setLastResult(null);
-      }, 3000);
-    } catch (error) {
-      console.error("❌ Error processing speech:", error);
-      setLastResult({
-        success: false,
-        message: "Processing failed. Try again.",
-      });
-
-      // Clear audio data and reset
-      resetRecording();
-      setAppState("showingResult");
-
-      // Reset to idle after delay
-      setTimeout(() => {
-        setAppState("idle");
-        setLastResult(null);
-      }, 3000);
-    }
-  };
+  }, [audioBlob, appState, processAudioAutomatically]);
 
   // Testing mode functions
   const handleFileUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -486,14 +490,6 @@ export default function PronunciationPracticeSimple() {
           disabled: true,
           onClick: () => {},
           className: "bg-gray-500",
-        };
-      case "showingResult":
-        return {
-          text: "Get Ready",
-          icon: <Mic className="w-4 md:w-5 h-4 md:h-5 mr-2" />,
-          disabled: true,
-          onClick: () => {},
-          className: "bg-gray-400",
         };
       default:
         return {
@@ -772,7 +768,9 @@ export default function PronunciationPracticeSimple() {
             size="lg"
             onClick={buttonState.onClick}
             disabled={buttonState.disabled}
-            className={`flex-1 md:w-40 h-12 md:h-14 text-base md:text-lg font-semibold transition-all ${buttonState.className}`}
+            className={`flex-1 md:w-40 h-12 md:h-14 text-base md:text-lg font-semibold transition-all duration-150 ${
+              buttonPressed ? "scale-95" : "scale-100 hover:scale-105"
+            } ${buttonState.className}`}
           >
             {buttonState.icon}
             {buttonState.text}
@@ -783,7 +781,9 @@ export default function PronunciationPracticeSimple() {
             variant="outline"
             onClick={handleNextPhrase}
             disabled={appState === "recording" || appState === "processing"}
-            className="flex-1 md:w-40 h-12 md:h-14 text-base md:text-lg font-semibold border-2 border-[#5BA3E8] text-[#5BA3E8] hover:bg-[#5BA3E8]/10 bg-transparent"
+            className={`flex-1 md:w-40 h-12 md:h-14 text-base md:text-lg font-semibold border-2 border-[#5BA3E8] text-[#5BA3E8] hover:bg-[#5BA3E8]/10 bg-transparent transition-all duration-150 ${
+              buttonPressed ? "scale-95" : "scale-100 hover:scale-105"
+            }`}
           >
             <SkipForward className="w-4 md:w-5 h-4 md:h-5 mr-2" />
             {showCelebration ? "Next" : "Skip"}
