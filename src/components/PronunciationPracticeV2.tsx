@@ -29,7 +29,11 @@ import {
 } from "lucide-react";
 import Image from "next/image";
 import { useAudioRecorder } from "@/hooks/useAudioRecorder";
-import { getRandomPhrase, type FrenchPhrase } from "@/data/french-phrases";
+import {
+  getNextPhrase,
+  getTotalPhraseCount,
+  type FrenchPhrase,
+} from "@/lib/phrases-fallback";
 import { getPronunciationFeedback } from "@/lib/text-comparison";
 
 interface PronunciationResult {
@@ -50,7 +54,7 @@ type AppState =
 
 export default function PronunciationPracticeV2() {
   // Core state
-  const [currentPhraseIndex, setCurrentPhraseIndex] = useState(0);
+  const [currentPhraseIndex, setCurrentPhraseIndex] = useState(1); // Start at 1 for display
   const [successfulReps, setSuccessfulReps] = useState(0);
   const [requiredReps] = useState(5);
   const [showTranslation, setShowTranslation] = useState(false);
@@ -86,8 +90,11 @@ export default function PronunciationPracticeV2() {
 
   // Load initial phrase
   useEffect(() => {
-    const newPhrase = getRandomPhrase("beginner");
-    setCurrentPhrase(newPhrase);
+    const loadPhrase = async () => {
+      const newPhrase = await getNextPhrase();
+      setCurrentPhrase(newPhrase);
+    };
+    loadPhrase();
   }, []);
 
   // Debug logging
@@ -138,15 +145,18 @@ export default function PronunciationPracticeV2() {
     // Reset everything for new phrase
     setAppState("idle");
     setShowCelebration(false);
-    setCurrentPhraseIndex((prev) => prev + 1);
+    setCurrentPhraseIndex((prev) => (prev % getTotalPhraseCount()) + 1);
     setSuccessfulReps(0);
     setResult(null);
     setShowTranslation(false);
     setIsPlayingAudio(false);
 
-    // Load new random phrase
-    const newPhrase = getRandomPhrase("beginner");
-    setCurrentPhrase(newPhrase);
+    // Load next phrase in sequence
+    const loadNewPhrase = async () => {
+      const newPhrase = await getNextPhrase();
+      setCurrentPhrase(newPhrase);
+    };
+    loadNewPhrase();
 
     resetRecording();
   };
@@ -649,7 +659,7 @@ export default function PronunciationPracticeV2() {
         <div className="space-y-4">
           <div className="flex items-center justify-between">
             <h2 className="text-sm md:text-lg font-semibold text-foreground">
-              Current Phrase {currentPhraseIndex + 1}
+              Current Phrase {currentPhraseIndex}/{getTotalPhraseCount()}
             </h2>
             <Badge className={getDifficultyColor(currentPhrase.difficulty)}>
               {currentPhrase.difficulty}
@@ -693,7 +703,7 @@ export default function PronunciationPracticeV2() {
             {showTranslation && (
               <div className="p-3 md:p-4 bg-muted/50 rounded-xl border-2 border-muted-foreground/20 animate-in fade-in slide-in-from-top-2">
                 <p className="text-base md:text-lg text-muted-foreground text-center italic">
-                  {currentPhrase.english}
+                  {currentPhrase.english_translation}
                 </p>
               </div>
             )}

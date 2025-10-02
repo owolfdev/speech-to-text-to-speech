@@ -29,7 +29,11 @@ import {
 } from "lucide-react";
 import Image from "next/image";
 import { useAudioRecorder } from "@/hooks/useAudioRecorder";
-import { getRandomPhrase, type FrenchPhrase } from "@/data/french-phrases";
+import {
+  getNextPhrase,
+  getTotalPhraseCount,
+  type FrenchPhrase,
+} from "@/lib/phrases-fallback";
 import { getPronunciationFeedback } from "@/lib/text-comparison";
 
 interface PronunciationResult {
@@ -41,7 +45,7 @@ interface PronunciationResult {
 
 export default function PronunciationPractice() {
   // Core state from refined interface
-  const [currentPhraseIndex, setCurrentPhraseIndex] = useState(0);
+  const [currentPhraseIndex, setCurrentPhraseIndex] = useState(1); // Start at 1 for display
   const [successfulReps, setSuccessfulReps] = useState(0);
   const [requiredReps] = useState(5);
   const [showTranslation, setShowTranslation] = useState(false);
@@ -88,8 +92,13 @@ export default function PronunciationPractice() {
 
   // Load initial phrase
   useEffect(() => {
-    const newPhrase = getRandomPhrase("beginner");
-    setCurrentPhrase(newPhrase);
+    const loadPhrase = async () => {
+      console.log("🚀 Loading initial phrase...");
+      const newPhrase = await getNextPhrase();
+      console.log("✅ Initial phrase loaded:", newPhrase.text);
+      setCurrentPhrase(newPhrase);
+    };
+    loadPhrase();
   }, []);
 
   // Debug logging for state changes
@@ -145,12 +154,12 @@ export default function PronunciationPractice() {
   };
 
   // Handle phrase navigation
-  const handleNextPhrase = () => {
+  const handleNextPhrase = async () => {
     if ("speechSynthesis" in window) {
       window.speechSynthesis.cancel();
     }
     setShowCelebration(false);
-    setCurrentPhraseIndex((prev) => prev + 1);
+    setCurrentPhraseIndex((prev) => (prev % getTotalPhraseCount()) + 1);
     setSuccessfulReps(0);
     setResult(null);
     setShowTranslation(false);
@@ -158,9 +167,15 @@ export default function PronunciationPractice() {
     setProcessedAudioBlob(null); // Reset processed blob for new phrase
     setCurrentRecordingSession(null); // Reset recording session
 
-    // Load new random phrase
-    const newPhrase = getRandomPhrase("beginner");
-    setCurrentPhrase(newPhrase);
+    // Load next phrase in sequence
+    console.log("🔄 Loading next phrase...");
+    try {
+      const newPhrase = await getNextPhrase();
+      console.log("✅ Next phrase loaded:", newPhrase.text);
+      setCurrentPhrase(newPhrase);
+    } catch (error) {
+      console.error("❌ Error loading phrase:", error);
+    }
 
     resetRecording();
   };
@@ -534,13 +549,26 @@ export default function PronunciationPractice() {
                 <TestTube className="w-5 h-5" />
                 🧪 Developer Testing Mode
               </CardTitle>
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={() => setShowTestingMode(false)}
-              >
-                <X className="w-4 h-4" />
-              </Button>
+              <div className="flex gap-2">
+                <Button
+                  onClick={async () => {
+                    console.log("🧪 Manual test - loading phrase...");
+                    const testPhrase = await getNextPhrase();
+                    console.log("🧪 Manual test result:", testPhrase.text);
+                    setCurrentPhrase(testPhrase);
+                  }}
+                  className="bg-green-500 hover:bg-green-600 text-white px-3 py-1 text-sm"
+                >
+                  Test Phrase Load
+                </Button>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => setShowTestingMode(false)}
+                >
+                  <X className="w-4 h-4" />
+                </Button>
+              </div>
             </div>
             <CardDescription>
               Upload an audio file (.ogg, .mp3, .wav, .webm, etc.) to test
@@ -630,7 +658,7 @@ export default function PronunciationPractice() {
         <div className="space-y-4">
           <div className="flex items-center justify-between">
             <h2 className="text-sm md:text-lg font-semibold text-foreground">
-              Current Phrase {currentPhraseIndex + 1}
+              Current Phrase {currentPhraseIndex}/{getTotalPhraseCount()}
             </h2>
             <Badge className={getDifficultyColor(currentPhrase.difficulty)}>
               {currentPhrase.difficulty}
@@ -674,7 +702,7 @@ export default function PronunciationPractice() {
             {showTranslation && (
               <div className="p-3 md:p-4 bg-muted/50 rounded-xl border-2 border-muted-foreground/20 animate-in fade-in slide-in-from-top-2">
                 <p className="text-base md:text-lg text-muted-foreground text-center italic">
-                  {currentPhrase.english}
+                  {currentPhrase.english_translation}
                 </p>
               </div>
             )}
