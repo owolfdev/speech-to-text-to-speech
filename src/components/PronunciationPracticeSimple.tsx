@@ -603,7 +603,7 @@ export default function PronunciationPracticeSimple() {
             alt="Répéter"
             width={48}
             height={48}
-            className="rounded-xl shadow-lg"
+            className="rounded-xl"
           />
           <h1 className="text-4xl md:text-5xl font-bold text-white">Répéter</h1>
         </div>
@@ -627,10 +627,10 @@ export default function PronunciationPracticeSimple() {
           alt="Répéter"
           width={48}
           height={48}
-          className="rounded-xl shadow-lg"
+          className="rounded-xl"
         />
         <h1 className="text-4xl md:text-5xl font-bold text-white">Répéter</h1>
-        <Button
+        {/* <Button
           variant="ghost"
           size="sm"
           onClick={() => setShowTestingMode(!showTestingMode)}
@@ -638,7 +638,7 @@ export default function PronunciationPracticeSimple() {
           title="Toggle Testing Mode"
         >
           <TestTube className="w-4 h-4" />
-        </Button>
+        </Button> */}
       </div>
 
       {/* Testing Mode */}
