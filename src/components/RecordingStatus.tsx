@@ -81,7 +81,7 @@ export default function RecordingStatus({
               <span>Recording in progress...</span>
             </div>
             <p className="text-xs text-muted-foreground">
-              Click "Stop Recording" when you're finished
+              Click &quot;Stop Recording&quot; when you&apos;re finished
             </p>
           </div>
         )}
