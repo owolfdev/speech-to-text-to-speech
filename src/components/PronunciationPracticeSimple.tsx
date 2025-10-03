@@ -35,6 +35,7 @@ import {
 } from "@/lib/phrases-fallback";
 import { getPronunciationFeedback } from "@/lib/text-comparison";
 import TTSAudioPlayer from "@/components/TTSAudioPlayer";
+import RecordingStatus from "@/components/RecordingStatus";
 
 // SIMPLE STATE MACHINE
 type AppState = "idle" | "recording" | "processing";
@@ -153,6 +154,9 @@ export default function PronunciationPracticeSimple() {
       setPermissionError(null);
       setLastResult(null); // Clear success/failure message when starting new recording
       setAppState("idle");
+
+      // Clear previous audio data when starting new recording
+      resetRecording();
 
       // Start recording
       await startRecording();
@@ -307,7 +311,7 @@ export default function PronunciationPracticeSimple() {
           });
         }
 
-        // CLEAR AUDIO DATA IMMEDIATELY after processing
+        // Clear audio data immediately after processing
         resetRecording();
 
         // Go straight to idle state - message stays until user clicks record
@@ -474,9 +478,7 @@ export default function PronunciationPracticeSimple() {
         };
       case "recording":
         return {
-          text: `Stop (${Math.floor(recordingTime / 60)}:${(recordingTime % 60)
-            .toString()
-            .padStart(2, "0")})`,
+          text: "Stop Recording",
           icon: <MicOff className="w-4 md:w-5 h-4 md:h-5 mr-2" />,
           disabled: false,
           onClick: handleStopRecording,
@@ -785,49 +787,60 @@ export default function PronunciationPracticeSimple() {
           </Button>
         </div>
 
-        {/* UNIFIED SUCCESS/FAILURE/CELEBRATION MESSAGE - Below buttons */}
-        {(lastResult || showCelebration) && (
-          <div
-            className={`p-4 md:p-6 rounded-xl border-2 ${
-              showCelebration
-                ? "bg-[#5BA3E8]/10 border-[#5BA3E8] animate-in fade-in slide-in-from-bottom-4"
-                : lastResult?.success
-                ? "bg-green-50 dark:bg-green-900/20 border-green-200 dark:border-green-800"
-                : "bg-yellow-50 dark:bg-yellow-900/20 border-yellow-200 dark:border-yellow-800"
-            }`}
-          >
-            <div className="text-center space-y-2">
-              {showCelebration ? (
-                <>
-                  <p className="text-xl md:text-2xl font-bold text-[#5BA3E8]">
-                    🎉 Phrase Mastered!
-                  </p>
-                  <p className="text-sm md:text-base text-muted-foreground">
-                    You&apos;ve successfully repeated this phrase {requiredReps}{" "}
-                    times. Ready for the next one?
-                  </p>
-                </>
-              ) : lastResult ? (
-                <>
-                  <p
-                    className={`${
-                      lastResult.success
-                        ? "text-green-700 dark:text-green-300"
-                        : "text-yellow-700 dark:text-yellow-300"
-                    }`}
-                  >
-                    {lastResult.message}
-                  </p>
-                  {lastResult.transcription && (
-                    <p className="text-sm text-muted-foreground italic">
-                      You said: &quot;{lastResult.transcription}&quot;
-                    </p>
-                  )}
-                </>
-              ) : null}
-            </div>
-          </div>
+        {/* RECORDING STATUS - Show during recording/processing */}
+        {(isAudioRecording || appState === "processing") && (
+          <RecordingStatus
+            isRecording={isAudioRecording}
+            isProcessing={appState === "processing"}
+            recordingTime={recordingTime}
+          />
         )}
+
+        {/* SUCCESS/FAILURE MESSAGES - Show when not recording/processing */}
+        {!isAudioRecording &&
+          appState !== "processing" &&
+          (lastResult || showCelebration) && (
+            <div
+              className={`p-4 md:p-6 rounded-xl border-2 ${
+                showCelebration
+                  ? "bg-[#5BA3E8]/10 border-[#5BA3E8] animate-in fade-in slide-in-from-bottom-4"
+                  : lastResult?.success
+                  ? "bg-green-50 dark:bg-green-900/20 border-green-200 dark:border-green-800"
+                  : "bg-yellow-50 dark:bg-yellow-900/20 border-yellow-200 dark:border-yellow-800"
+              }`}
+            >
+              <div className="text-center space-y-2">
+                {showCelebration ? (
+                  <>
+                    <p className="text-xl md:text-2xl font-bold text-[#5BA3E8]">
+                      🎉 Phrase Mastered!
+                    </p>
+                    <p className="text-sm md:text-base text-muted-foreground">
+                      You&apos;ve successfully repeated this phrase{" "}
+                      {requiredReps} times. Ready for the next one?
+                    </p>
+                  </>
+                ) : lastResult ? (
+                  <>
+                    <p
+                      className={`${
+                        lastResult.success
+                          ? "text-green-700 dark:text-green-300"
+                          : "text-yellow-700 dark:text-yellow-300"
+                      }`}
+                    >
+                      {lastResult.message}
+                    </p>
+                    {lastResult.transcription && (
+                      <p className="text-sm text-muted-foreground italic">
+                        You said: &quot;{lastResult.transcription}&quot;
+                      </p>
+                    )}
+                  </>
+                ) : null}
+              </div>
+            </div>
+          )}
       </Card>
 
       {/* Footer instruction */}
