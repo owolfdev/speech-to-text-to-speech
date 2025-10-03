@@ -765,7 +765,8 @@ export default function PronunciationPracticeSimple() {
         <div className="space-y-4">
           <div className="flex items-center justify-between">
             <h2 className="text-sm md:text-lg font-semibold text-foreground">
-              Current Phrase {currentPhraseIndex}/{totalPhraseCount}
+              <span className="hidden md:inline">Current Phrase </span>
+              {currentPhraseIndex}/{totalPhraseCount}
             </h2>
             <div className="flex items-center gap-2">
               {/* Difficulty Filter Menu */}
