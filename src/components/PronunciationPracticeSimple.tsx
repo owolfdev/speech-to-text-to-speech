@@ -25,14 +25,12 @@ import {
   Info,
   TestTube,
   X,
+  Filter,
+  ChevronDown,
 } from "lucide-react";
 import Image from "next/image";
 import { useAudioRecorder } from "@/hooks/useAudioRecorder";
-import {
-  getNextPhrase,
-  getTotalPhraseCount,
-  type FrenchPhrase,
-} from "@/lib/phrases-fallback";
+import { getAllPhrases, type FrenchPhrase } from "@/lib/phrases";
 import { getPronunciationFeedback } from "@/lib/text-comparison";
 import TTSAudioPlayer from "@/components/TTSAudioPlayer";
 import RecordingStatus from "@/components/RecordingStatus";
@@ -43,6 +41,7 @@ type AppState = "idle" | "recording" | "processing";
 export default function PronunciationPracticeSimple() {
   // Core state
   const [currentPhraseIndex, setCurrentPhraseIndex] = useState(1); // Start at 1 for display
+  const [totalPhraseCount, setTotalPhraseCount] = useState(0);
   const [successfulReps, setSuccessfulReps] = useState(0);
   const [requiredReps] = useState(5);
   const [showTranslation, setShowTranslation] = useState(false);
@@ -51,6 +50,19 @@ export default function PronunciationPracticeSimple() {
   const [currentPhrase, setCurrentPhrase] = useState<FrenchPhrase | null>(null);
   const [score, setScore] = useState(0);
   const [attempts, setAttempts] = useState(0);
+
+  // Difficulty filter state
+  const [difficultyFilter, setDifficultyFilter] = useState<
+    "all" | "beginner" | "intermediate" | "advanced"
+  >("all");
+  const [allPhrases, setAllPhrases] = useState<FrenchPhrase[]>([]);
+  const [filteredPhrases, setFilteredPhrases] = useState<FrenchPhrase[]>([]);
+  const [currentFilteredIndex, setCurrentFilteredIndex] = useState(0);
+  const [showDifficultyMenu, setShowDifficultyMenu] = useState(false);
+
+  // Category filter state
+  const [categoryFilter, setCategoryFilter] = useState<string>("all");
+  const [showCategoryMenu, setShowCategoryMenu] = useState(false);
 
   // Simple feedback state
   const [lastResult, setLastResult] = useState<{
@@ -81,14 +93,110 @@ export default function PronunciationPracticeSimple() {
     resetRecording,
   } = useAudioRecorder();
 
-  // Load initial phrase
+  // Load all phrases on component mount
   useEffect(() => {
-    const loadPhrase = async () => {
-      const newPhrase = await getNextPhrase();
-      setCurrentPhrase(newPhrase);
+    const loadAllPhrases = async () => {
+      try {
+        const phrases = await getAllPhrases();
+        setAllPhrases(phrases);
+      } catch (error) {
+        console.error("Error loading all phrases:", error);
+      }
     };
-    loadPhrase();
+    loadAllPhrases();
   }, []);
+
+  // Load phrases based on difficulty and category filters
+  useEffect(() => {
+    const loadPhrases = async () => {
+      try {
+        let phrases: FrenchPhrase[] = allPhrases;
+
+        // Apply difficulty filter
+        if (difficultyFilter !== "all") {
+          phrases = phrases.filter((p) => p.difficulty === difficultyFilter);
+        }
+
+        // Apply category filter
+        if (categoryFilter !== "all") {
+          phrases = phrases.filter((p) => p.category === categoryFilter);
+        }
+
+        setFilteredPhrases(phrases);
+        setCurrentFilteredIndex(0);
+        setTotalPhraseCount(phrases.length); // Set total count to filtered phrases count
+
+        if (phrases.length > 0) {
+          setCurrentPhrase(phrases[0]);
+          setCurrentPhraseIndex(1);
+        }
+      } catch (error) {
+        console.error("Error loading phrases:", error);
+      }
+    };
+
+    if (allPhrases.length > 0) {
+      loadPhrases();
+    }
+  }, [difficultyFilter, categoryFilter, allPhrases]);
+
+  // Close difficulty menu when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (showDifficultyMenu) {
+        const target = event.target as Element;
+        if (!target.closest("[data-difficulty-menu]")) {
+          setShowDifficultyMenu(false);
+        }
+      }
+      if (showCategoryMenu) {
+        const target = event.target as Element;
+        if (!target.closest("[data-category-menu]")) {
+          setShowCategoryMenu(false);
+        }
+      }
+    };
+
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, [showDifficultyMenu, showCategoryMenu]);
+
+  // Get count for each difficulty level (always shows total count, not filtered count)
+  const getDifficultyCount = (difficulty: string) => {
+    if (difficulty === "all") {
+      return allPhrases.length;
+    }
+    return allPhrases.filter((p) => p.difficulty === difficulty).length;
+  };
+
+  // Get count for each category (always shows total count, not filtered count)
+  const getCategoryCount = (category: string) => {
+    if (category === "all") {
+      return allPhrases.length;
+    }
+    return allPhrases.filter((p) => p.category === category).length;
+  };
+
+  // Get unique categories from all phrases
+  const getUniqueCategories = () => {
+    const categories = allPhrases.reduce((acc, phrase) => {
+      if (!acc.find((cat) => cat.value === phrase.category)) {
+        acc.push({
+          value: phrase.category,
+          label:
+            phrase.category.charAt(0).toUpperCase() +
+            phrase.category.slice(1).replace("_", " "),
+          count: getCategoryCount(phrase.category),
+        });
+      }
+      return acc;
+    }, [] as { value: string; label: string; count: number }[]);
+
+    return [
+      { value: "all", label: "All Categories", count: allPhrases.length },
+      ...categories.sort((a, b) => a.label.localeCompare(b.label)),
+    ];
+  };
 
   // Debug logging
   useEffect(() => {
@@ -124,16 +232,14 @@ export default function PronunciationPracticeSimple() {
     setAppState("idle");
     setShowCelebration(false);
     setLastResult(null);
-    setCurrentPhraseIndex((prev) => (prev % getTotalPhraseCount()) + 1);
     setSuccessfulReps(0);
     setShowTranslation(false);
 
-    // Load next phrase in sequence
-    const loadNewPhrase = async () => {
-      const newPhrase = await getNextPhrase();
-      setCurrentPhrase(newPhrase);
-    };
-    loadNewPhrase();
+    // Move to next phrase in filtered list
+    const nextIndex = (currentFilteredIndex + 1) % filteredPhrases.length;
+    setCurrentFilteredIndex(nextIndex);
+    setCurrentPhraseIndex(nextIndex + 1);
+    setCurrentPhrase(filteredPhrases[nextIndex]);
 
     resetRecording();
   };
@@ -659,11 +765,122 @@ export default function PronunciationPracticeSimple() {
         <div className="space-y-4">
           <div className="flex items-center justify-between">
             <h2 className="text-sm md:text-lg font-semibold text-foreground">
-              Current Phrase {currentPhraseIndex}/{getTotalPhraseCount()}
+              Current Phrase {currentPhraseIndex}/{totalPhraseCount}
             </h2>
-            <Badge className={getDifficultyColor(currentPhrase.difficulty)}>
-              {currentPhrase.difficulty}
-            </Badge>
+            <div className="flex items-center gap-2">
+              {/* Difficulty Filter Menu */}
+              <div className="relative" data-difficulty-menu>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setShowDifficultyMenu(!showDifficultyMenu)}
+                  className="flex items-center gap-2 bg-white/90 hover:bg-white text-foreground border-[#5BA3E8]/30"
+                >
+                  <Filter className="h-4 w-4" />
+                  <span className="hidden sm:inline">
+                    {difficultyFilter === "all"
+                      ? "All Levels"
+                      : difficultyFilter.charAt(0).toUpperCase() +
+                        difficultyFilter.slice(1)}
+                  </span>
+                  <ChevronDown className="h-4 w-4" />
+                </Button>
+
+                {showDifficultyMenu && (
+                  <div className="absolute right-0 top-full mt-1 w-48 bg-white rounded-lg shadow-lg border border-gray-200 z-50">
+                    <div className="py-1">
+                      {[
+                        {
+                          value: "all",
+                          label: "All Levels",
+                          count: totalPhraseCount,
+                        },
+                        { value: "beginner", label: "Beginner", count: 0 },
+                        {
+                          value: "intermediate",
+                          label: "Intermediate",
+                          count: 0,
+                        },
+                        { value: "advanced", label: "Advanced", count: 0 },
+                      ].map((option) => (
+                        <button
+                          key={option.value}
+                          onClick={() => {
+                            setDifficultyFilter(
+                              option.value as
+                                | "all"
+                                | "beginner"
+                                | "intermediate"
+                                | "advanced"
+                            );
+                            setShowDifficultyMenu(false);
+                          }}
+                          className={`w-full text-left px-4 py-2 text-sm hover:bg-gray-100 flex items-center justify-between ${
+                            difficultyFilter === option.value
+                              ? "bg-[#5BA3E8]/10 text-[#5BA3E8]"
+                              : "text-gray-700"
+                          }`}
+                        >
+                          <span>{option.label}</span>
+                          <span className="text-xs text-gray-500">
+                            {getDifficultyCount(option.value)}
+                          </span>
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              {/* Category Filter Menu */}
+              <div className="relative" data-category-menu>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setShowCategoryMenu(!showCategoryMenu)}
+                  className="flex items-center gap-2 bg-white/90 hover:bg-white text-foreground border-[#10B981]/30"
+                >
+                  <Filter className="h-4 w-4" />
+                  <span className="hidden sm:inline">
+                    {categoryFilter === "all"
+                      ? "All Categories"
+                      : categoryFilter.charAt(0).toUpperCase() +
+                        categoryFilter.slice(1).replace("_", " ")}
+                  </span>
+                  <ChevronDown className="h-4 w-4" />
+                </Button>
+
+                {showCategoryMenu && (
+                  <div className="absolute right-0 top-full mt-1 w-56 bg-white rounded-lg shadow-lg border border-gray-200 z-50 max-h-64 overflow-y-auto">
+                    <div className="py-1">
+                      {getUniqueCategories().map((option) => (
+                        <button
+                          key={option.value}
+                          onClick={() => {
+                            setCategoryFilter(option.value);
+                            setShowCategoryMenu(false);
+                          }}
+                          className={`w-full text-left px-4 py-2 text-sm hover:bg-gray-100 flex items-center justify-between ${
+                            categoryFilter === option.value
+                              ? "bg-[#10B981]/10 text-[#10B981]"
+                              : "text-gray-700"
+                          }`}
+                        >
+                          <span>{option.label}</span>
+                          <span className="text-xs text-gray-500">
+                            {option.count}
+                          </span>
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              <Badge className={getDifficultyColor(currentPhrase.difficulty)}>
+                {currentPhrase.difficulty}
+              </Badge>
+            </div>
           </div>
 
           <div className="space-y-3">
@@ -695,10 +912,41 @@ export default function PronunciationPracticeSimple() {
 
             {/* Translation display */}
             {showTranslation && (
-              <div className="p-3 md:p-4 bg-muted/50 rounded-xl border-2 border-muted-foreground/20 animate-in fade-in slide-in-from-top-2">
-                <p className="text-base md:text-lg text-muted-foreground text-center italic">
-                  {currentPhrase.english_translation}
-                </p>
+              <div className="space-y-3">
+                <div className="p-3 md:p-4 bg-muted/50 rounded-xl border-2 border-muted-foreground/20 animate-in fade-in slide-in-from-top-2">
+                  <p className="text-base md:text-lg text-muted-foreground text-center italic">
+                    {currentPhrase.english_translation}
+                  </p>
+                </div>
+
+                {/* Grammar explanation */}
+                {(currentPhrase.grammar_notes ||
+                  currentPhrase.verb_conjugation) && (
+                  <div className="p-3 md:p-4 bg-blue-50/80 rounded-xl border-2 border-blue-200/30 animate-in fade-in slide-in-from-top-2">
+                    <div className="space-y-2">
+                      {currentPhrase.grammar_notes && (
+                        <div>
+                          <h4 className="text-sm font-semibold text-blue-800 mb-1">
+                            Grammar Notes:
+                          </h4>
+                          <p className="text-sm text-blue-700">
+                            {currentPhrase.grammar_notes}
+                          </p>
+                        </div>
+                      )}
+                      {currentPhrase.verb_conjugation && (
+                        <div>
+                          <h4 className="text-sm font-semibold text-blue-800 mb-1">
+                            Verb Conjugation:
+                          </h4>
+                          <p className="text-sm text-blue-700 font-mono">
+                            {currentPhrase.verb_conjugation}
+                          </p>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                )}
               </div>
             )}
           </div>

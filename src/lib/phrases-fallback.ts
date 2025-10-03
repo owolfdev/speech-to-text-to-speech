@@ -9,6 +9,7 @@ export interface FrenchPhrase {
   audio_url: string | null;
   usage_notes: string | null;
   grammar_notes: string | null;
+  verb_conjugation: string | null;
   difficulty_score: number;
   frequency_score: number;
   is_active: boolean;
@@ -41,7 +42,10 @@ const frenchPhrases: FrenchPhrase[] = [
     phonetic_guide: null,
     audio_url: null,
     usage_notes: null,
-    grammar_notes: null,
+    grammar_notes:
+      "Present tense of 'aller' (to go). Note: 'comment allez-vous?' is the formal way to ask 'how are you?'",
+    verb_conjugation:
+      "ALLER (to go): je vais, tu vas, il/elle va, nous allons, vous allez, ils/elles vont",
     difficulty_score: 2,
     frequency_score: 9,
     is_active: true,
@@ -61,7 +65,10 @@ const frenchPhrases: FrenchPhrase[] = [
     phonetic_guide: null,
     audio_url: null,
     usage_notes: null,
-    grammar_notes: null,
+    grammar_notes:
+      "Reflexive verb 's'appeler' (to call oneself). The reflexive pronoun 'me' changes to 'm'' before a vowel.",
+    verb_conjugation:
+      "S'APPELER (to call oneself): je m'appelle, tu t'appelles, il/elle s'appelle, nous nous appelons, vous vous appelez, ils/elles s'appellent",
     difficulty_score: 1,
     frequency_score: 8,
     is_active: true,
@@ -82,6 +89,7 @@ const frenchPhrases: FrenchPhrase[] = [
     audio_url: null,
     usage_notes: null,
     grammar_notes: null,
+    verb_conjugation: null,
     difficulty_score: 1,
     frequency_score: 10,
     is_active: true,
@@ -102,6 +110,7 @@ const frenchPhrases: FrenchPhrase[] = [
     audio_url: null,
     usage_notes: null,
     grammar_notes: null,
+    verb_conjugation: null,
     difficulty_score: 1,
     frequency_score: 9,
     is_active: true,
@@ -122,6 +131,7 @@ const frenchPhrases: FrenchPhrase[] = [
     audio_url: null,
     usage_notes: null,
     grammar_notes: null,
+    verb_conjugation: null,
     difficulty_score: 3,
     frequency_score: 6,
     is_active: true,
@@ -142,7 +152,10 @@ const frenchPhrases: FrenchPhrase[] = [
     phonetic_guide: null,
     audio_url: null,
     usage_notes: null,
-    grammar_notes: null,
+    grammar_notes:
+      "Present tense of 'vouloir' (to want). 'Je voudrais' is the conditional form, more polite than 'je veux'.",
+    verb_conjugation:
+      "VOULOIR (to want): je veux, tu veux, il/elle veut, nous voulons, vous voulez, ils/elles veulent",
     difficulty_score: 5,
     frequency_score: 4,
     is_active: true,
@@ -163,6 +176,7 @@ const frenchPhrases: FrenchPhrase[] = [
     audio_url: null,
     usage_notes: null,
     grammar_notes: null,
+    verb_conjugation: null,
     difficulty_score: 4,
     frequency_score: 7,
     is_active: true,
@@ -183,6 +197,7 @@ const frenchPhrases: FrenchPhrase[] = [
     audio_url: null,
     usage_notes: null,
     grammar_notes: null,
+    verb_conjugation: null,
     difficulty_score: 3,
     frequency_score: 8,
     is_active: true,
@@ -203,6 +218,7 @@ const frenchPhrases: FrenchPhrase[] = [
     audio_url: null,
     usage_notes: null,
     grammar_notes: null,
+    verb_conjugation: null,
     difficulty_score: 4,
     frequency_score: 5,
     is_active: true,
@@ -223,6 +239,7 @@ const frenchPhrases: FrenchPhrase[] = [
     audio_url: null,
     usage_notes: null,
     grammar_notes: null,
+    verb_conjugation: null,
     difficulty_score: 4,
     frequency_score: 6,
     is_active: true,
@@ -244,6 +261,7 @@ const frenchPhrases: FrenchPhrase[] = [
     audio_url: null,
     usage_notes: null,
     grammar_notes: null,
+    verb_conjugation: null,
     difficulty_score: 8,
     frequency_score: 3,
     is_active: true,
@@ -264,6 +282,7 @@ const frenchPhrases: FrenchPhrase[] = [
     audio_url: null,
     usage_notes: null,
     grammar_notes: null,
+    verb_conjugation: null,
     difficulty_score: 9,
     frequency_score: 2,
     is_active: true,
@@ -284,6 +303,7 @@ const frenchPhrases: FrenchPhrase[] = [
     audio_url: null,
     usage_notes: null,
     grammar_notes: null,
+    verb_conjugation: null,
     difficulty_score: 7,
     frequency_score: 4,
     is_active: true,
@@ -304,6 +324,7 @@ const frenchPhrases: FrenchPhrase[] = [
     audio_url: null,
     usage_notes: null,
     grammar_notes: null,
+    verb_conjugation: null,
     difficulty_score: 9,
     frequency_score: 2,
     is_active: true,
@@ -324,6 +345,7 @@ const frenchPhrases: FrenchPhrase[] = [
     audio_url: null,
     usage_notes: null,
     grammar_notes: null,
+    verb_conjugation: null,
     difficulty_score: 8,
     frequency_score: 3,
     is_active: true,

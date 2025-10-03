@@ -28,6 +28,7 @@ export interface FrenchPhrase {
   audio_url: string | null;
   usage_notes: string | null;
   grammar_notes: string | null;
+  verb_conjugation: string | null;
   difficulty_score: number;
   frequency_score: number;
   is_active: boolean;
@@ -53,7 +54,7 @@ export interface LegacyFrenchPhrase {
 // Data access functions
 export async function getAllPhrases(): Promise<FrenchPhrase[]> {
   const { data, error } = await supabase
-    .from("phrases_with_details")
+    .from("language_app_phrases_with_details")
     .select("*")
     .eq("is_active", true)
     .order("difficulty_level", { ascending: true })
@@ -71,7 +72,7 @@ export async function getPhrasesByDifficulty(
   difficulty: "beginner" | "intermediate" | "advanced"
 ): Promise<FrenchPhrase[]> {
   const { data, error } = await supabase
-    .from("phrases_with_details")
+    .from("language_app_phrases_with_details")
     .select("*")
     .eq("difficulty", difficulty)
     .eq("is_active", true)
@@ -89,7 +90,7 @@ export async function getPhrasesByCategory(
   category: string
 ): Promise<FrenchPhrase[]> {
   const { data, error } = await supabase
-    .from("phrases_with_details")
+    .from("language_app_phrases_with_details")
     .select("*")
     .eq("category", category)
     .eq("is_active", true)
@@ -107,7 +108,7 @@ export async function getRandomPhrase(
   difficulty?: "beginner" | "intermediate" | "advanced",
   category?: string
 ): Promise<FrenchPhrase> {
-  const { data, error } = await supabase.rpc("get_random_phrase", {
+  const { data, error } = await supabase.rpc("language_app_get_random_phrase", {
     difficulty_filter: difficulty || null,
     category_filter: category || null,
     limit_count: 1,
@@ -127,7 +128,7 @@ export async function getRandomPhrase(
 
 export async function getCategories(): Promise<Category[]> {
   const { data, error } = await supabase
-    .from("categories")
+    .from("language_app_categories")
     .select("*")
     .order("name");
 
@@ -141,7 +142,7 @@ export async function getCategories(): Promise<Category[]> {
 
 export async function getDifficultyLevels(): Promise<DifficultyLevel[]> {
   const { data, error } = await supabase
-    .from("difficulty_levels")
+    .from("language_app_difficulty_levels")
     .select("*")
     .order("level_order");
 
@@ -211,4 +212,41 @@ export async function getCachedRandomPhrase(
 export function clearPhrasesCache(): void {
   cachedPhrases = null;
   cacheTimestamp = 0;
+}
+
+// Sequential phrase counter for compatibility with fallback version
+let currentPhraseIndex = 0;
+
+export async function getNextPhrase(): Promise<FrenchPhrase> {
+  const phrases = await getCachedPhrases();
+
+  if (phrases.length === 0) {
+    throw new Error("No phrases found");
+  }
+
+  const phrase = phrases[currentPhraseIndex];
+  currentPhraseIndex = (currentPhraseIndex + 1) % phrases.length;
+
+  return phrase;
+}
+
+// Reset the sequence to start from the beginning
+export function resetPhraseSequence(): void {
+  currentPhraseIndex = 0;
+}
+
+// Get total count of phrases
+export async function getTotalPhraseCount(): Promise<number> {
+  const phrases = await getCachedPhrases();
+  return phrases.length;
+}
+
+// Get count by difficulty
+export async function getPhraseCountByDifficulty(
+  difficulty: "beginner" | "intermediate" | "advanced"
+): Promise<number> {
+  const phrases = await getCachedPhrases();
+  return phrases.filter(
+    (phrase) => phrase.difficulty === difficulty && phrase.is_active
+  ).length;
 }
