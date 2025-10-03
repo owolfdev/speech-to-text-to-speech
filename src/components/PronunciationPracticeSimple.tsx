@@ -896,7 +896,7 @@ export default function PronunciationPracticeSimple() {
                 onError={handlePlayError}
               />
 
-              <p className="text-xl md:text-2xl font-medium text-[#5BA3E8] text-center text-balance px-8">
+              <p className="text-2xl md:text-3xl font-medium text-black text-center text-balance px-8">
                 {currentPhrase.text}
               </p>
 
@@ -915,7 +915,7 @@ export default function PronunciationPracticeSimple() {
             {showTranslation && (
               <div className="space-y-3">
                 <div className="p-3 md:p-4 bg-muted/50 rounded-xl border-2 border-muted-foreground/20 animate-in fade-in slide-in-from-top-2">
-                  <p className="text-base md:text-lg text-muted-foreground text-center italic">
+                  <p className="text-lg md:text-xl text-muted-foreground text-center italic">
                     {currentPhrase.english_translation}
                   </p>
                 </div>
@@ -927,20 +927,20 @@ export default function PronunciationPracticeSimple() {
                     <div className="space-y-2">
                       {currentPhrase.grammar_notes && (
                         <div>
-                          <h4 className="text-sm font-semibold text-blue-800 mb-1">
+                          <h4 className="text-base font-semibold text-blue-800 mb-2">
                             Grammar Notes:
                           </h4>
-                          <p className="text-sm text-blue-700">
+                          <p className="text-base text-blue-700">
                             {currentPhrase.grammar_notes}
                           </p>
                         </div>
                       )}
                       {currentPhrase.verb_conjugation && (
                         <div>
-                          <h4 className="text-sm font-semibold text-blue-800 mb-1">
+                          <h4 className="text-base font-semibold text-blue-800 mb-2">
                             Verb Conjugation:
                           </h4>
-                          <p className="text-sm text-blue-700 font-mono">
+                          <p className="text-base text-blue-700 font-mono">
                             {currentPhrase.verb_conjugation}
                           </p>
                         </div>
