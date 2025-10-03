@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { Button } from "@/components/ui/button";
 import {
   Card,
@@ -83,6 +83,9 @@ export default function PronunciationPracticeSimple() {
   // Button animation state
   const [buttonPressed, setButtonPressed] = useState(false);
 
+  // Ref to track previous phrase for filter changes
+  const previousPhraseRef = useRef<FrenchPhrase | null>(null);
+
   // Use our existing audio recorder hook
   const {
     isRecording: isAudioRecording,
@@ -123,12 +126,33 @@ export default function PronunciationPracticeSimple() {
         }
 
         setFilteredPhrases(phrases);
-        setCurrentFilteredIndex(0);
         setTotalPhraseCount(phrases.length); // Set total count to filtered phrases count
 
         if (phrases.length > 0) {
-          setCurrentPhrase(phrases[0]);
-          setCurrentPhraseIndex(1);
+          // Check if previous phrase is still in the filtered set
+          const previousPhrase = previousPhraseRef.current;
+          if (
+            previousPhrase &&
+            phrases.some((p) => p.id === previousPhrase.id)
+          ) {
+            // Previous phrase is still in filtered set, find its new index
+            const newIndex = phrases.findIndex(
+              (p) => p.id === previousPhrase.id
+            );
+            setCurrentFilteredIndex(newIndex);
+            setCurrentPhrase(phrases[newIndex]);
+            setCurrentPhraseIndex(newIndex + 1);
+          } else {
+            // Previous phrase is not in filtered set, or there was no previous phrase
+            setCurrentFilteredIndex(0);
+            setCurrentPhrase(phrases[0]);
+            setCurrentPhraseIndex(1);
+          }
+        } else {
+          // No phrases match the filter, clear current phrase
+          setCurrentPhrase(null);
+          setCurrentFilteredIndex(0);
+          setCurrentPhraseIndex(0);
         }
       } catch (error) {
         console.error("Error loading phrases:", error);
@@ -139,6 +163,11 @@ export default function PronunciationPracticeSimple() {
       loadPhrases();
     }
   }, [difficultyFilter, categoryFilter, allPhrases]);
+
+  // Update ref when current phrase changes
+  useEffect(() => {
+    previousPhraseRef.current = currentPhrase;
+  }, [currentPhrase]);
 
   // Close difficulty menu when clicking outside
   useEffect(() => {
@@ -609,7 +638,8 @@ export default function PronunciationPracticeSimple() {
     }
   };
 
-  if (!currentPhrase) {
+  // Show loading state only when we haven't loaded any data yet
+  if (allPhrases.length === 0) {
     return (
       <div className="max-w-2xl mx-auto space-y-4 md:space-y-6">
         <div className="flex items-center justify-center gap-3">
@@ -878,44 +908,60 @@ export default function PronunciationPracticeSimple() {
                 )}
               </div>
 
-              <Badge className={getDifficultyColor(currentPhrase.difficulty)}>
-                {currentPhrase.difficulty}
-              </Badge>
+              {currentPhrase && (
+                <Badge className={getDifficultyColor(currentPhrase.difficulty)}>
+                  {currentPhrase.difficulty}
+                </Badge>
+              )}
             </div>
           </div>
 
           <div className="space-y-3">
             {/* Phrase display with audio and translation controls */}
             <div className="p-4 md:p-6 bg-[#5BA3E8]/10 rounded-xl border-2 border-[#5BA3E8]/30">
-              <p className="text-2xl md:text-3xl font-medium text-black text-center text-balance mb-2">
-                {currentPhrase.text}
-              </p>
+              {currentPhrase ? (
+                <>
+                  <p className="text-2xl md:text-3xl font-medium text-black text-center text-balance mb-2">
+                    {currentPhrase.text}
+                  </p>
 
-              {/* Button controls at bottom */}
-              <div className="flex justify-between items-center -mx-2 -mb-2">
-                <TTSAudioPlayer
-                  text={currentPhrase.text}
-                  className="[&>button]:h-10 [&>button]:w-10 md:[&>button]:h-8 md:[&>button]:w-8"
-                  disabled={!currentPhrase}
-                  onPlayStart={handlePlayStart}
-                  onPlayEnd={handlePlayEnd}
-                  onError={handlePlayError}
-                />
+                  {/* Button controls at bottom */}
+                  <div className="flex justify-between items-center -mx-2 -mb-2">
+                    <TTSAudioPlayer
+                      text={currentPhrase.text}
+                      className="[&>button]:h-10 [&>button]:w-10 md:[&>button]:h-8 md:[&>button]:w-8"
+                      disabled={!currentPhrase}
+                      onPlayStart={handlePlayStart}
+                      onPlayEnd={handlePlayEnd}
+                      onError={handlePlayError}
+                    />
 
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  onClick={() => setShowTranslation(!showTranslation)}
-                  className="h-10 w-10 md:h-8 md:w-8 rounded-full hover:bg-[#5BA3E8]/10"
-                  title="Show translation"
-                >
-                  <Info className="w-5 h-5 md:w-4 md:h-4 text-[#5BA3E8]" />
-                </Button>
-              </div>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      onClick={() => setShowTranslation(!showTranslation)}
+                      className="h-10 w-10 md:h-8 md:w-8 rounded-full hover:bg-[#5BA3E8]/10"
+                      title="Show translation"
+                    >
+                      <Info className="w-5 h-5 md:w-4 md:h-4 text-[#5BA3E8]" />
+                    </Button>
+                  </div>
+                </>
+              ) : (
+                /* No phrases found message */
+                <div className="text-center py-8">
+                  <p className="text-xl md:text-2xl font-medium text-muted-foreground/70">
+                    No Phrases Found
+                  </p>
+                  <p className="text-sm md:text-base text-muted-foreground/50 mt-2">
+                    Try adjusting your filters to find phrases
+                  </p>
+                </div>
+              )}
             </div>
 
             {/* Translation display */}
-            {showTranslation && (
+            {showTranslation && currentPhrase && (
               <div className="space-y-3">
                 <div className="p-3 md:p-4 bg-muted/50 rounded-xl border-2 border-muted-foreground/20 animate-in fade-in slide-in-from-top-2">
                   <p className="text-xl md:text-2xl text-muted-foreground text-center italic">
@@ -955,40 +1001,42 @@ export default function PronunciationPracticeSimple() {
             )}
           </div>
 
-          {/* Progress section with emotional progression */}
-          <div className="space-y-3">
-            <div className="flex gap-1.5 md:gap-2">
-              {Array.from({ length: requiredReps }).map((_, i) => (
-                <div
-                  key={i}
-                  className="flex-1 flex flex-col items-center gap-1.5 md:gap-2"
-                >
-                  <div className="transition-all duration-500 transform hover:scale-110">
-                    {i < successfulReps ? (
-                      <div className="text-[#5BA3E8]">
-                        {getEmotionIcon(i, true)}
-                      </div>
-                    ) : (
-                      getEmotionIcon(i, false)
-                    )}
-                  </div>
+          {/* Progress section with emotional progression - only show when there's a current phrase */}
+          {currentPhrase && (
+            <div className="space-y-3">
+              <div className="flex gap-1.5 md:gap-2">
+                {Array.from({ length: requiredReps }).map((_, i) => (
                   <div
-                    className={`w-full h-2.5 md:h-3 rounded-full transition-all duration-500 ${
-                      i < successfulReps
-                        ? "bg-[#5BA3E8] shadow-lg shadow-[#5BA3E8]/30"
-                        : "bg-muted border-2 border-muted-foreground/20"
-                    }`}
+                    key={i}
+                    className="flex-1 flex flex-col items-center gap-1.5 md:gap-2"
                   >
-                    {i < successfulReps && (
-                      <div className="flex items-center justify-center h-full">
-                        <Check className="w-2.5 md:w-3 h-2.5 md:h-3 text-white" />
-                      </div>
-                    )}
+                    <div className="transition-all duration-500 transform hover:scale-110">
+                      {i < successfulReps ? (
+                        <div className="text-[#5BA3E8]">
+                          {getEmotionIcon(i, true)}
+                        </div>
+                      ) : (
+                        getEmotionIcon(i, false)
+                      )}
+                    </div>
+                    <div
+                      className={`w-full h-2.5 md:h-3 rounded-full transition-all duration-500 ${
+                        i < successfulReps
+                          ? "bg-[#5BA3E8] shadow-lg shadow-[#5BA3E8]/30"
+                          : "bg-muted border-2 border-muted-foreground/20"
+                      }`}
+                    >
+                      {i < successfulReps && (
+                        <div className="flex items-center justify-center h-full">
+                          <Check className="w-2.5 md:w-3 h-2.5 md:h-3 text-white" />
+                        </div>
+                      )}
+                    </div>
                   </div>
-                </div>
-              ))}
+                ))}
+              </div>
             </div>
-          </div>
+          )}
         </div>
 
         {/* Error handling for microphone permissions */}
@@ -1003,36 +1051,38 @@ export default function PronunciationPracticeSimple() {
           </div>
         )}
 
-        {/* Control buttons */}
-        <div className="flex items-center justify-center gap-3 md:gap-4">
-          <Button
-            size="lg"
-            onClick={buttonState.onClick}
-            disabled={buttonState.disabled}
-            className={`flex-1 md:w-40 h-12 md:h-14 text-base md:text-lg font-semibold transition-all duration-150 ${
-              buttonPressed ? "scale-95" : "scale-100 hover:scale-105"
-            } ${buttonState.className}`}
-          >
-            {buttonState.icon}
-            {buttonState.text}
-          </Button>
+        {/* Control buttons - only show when there's a current phrase */}
+        {currentPhrase && (
+          <div className="flex items-center justify-center gap-3 md:gap-4">
+            <Button
+              size="lg"
+              onClick={buttonState.onClick}
+              disabled={buttonState.disabled}
+              className={`flex-1 md:w-40 h-12 md:h-14 text-base md:text-lg font-semibold transition-all duration-150 ${
+                buttonPressed ? "scale-95" : "scale-100 hover:scale-105"
+              } ${buttonState.className}`}
+            >
+              {buttonState.icon}
+              {buttonState.text}
+            </Button>
 
-          <Button
-            size="lg"
-            variant="outline"
-            onClick={handleNextPhrase}
-            disabled={appState === "recording" || appState === "processing"}
-            className={`flex-1 md:w-40 h-12 md:h-14 text-base md:text-lg font-semibold border-2 border-[#5BA3E8] text-[#5BA3E8] hover:bg-[#5BA3E8]/10 bg-transparent transition-all duration-150 ${
-              buttonPressed ? "scale-95" : "scale-100 hover:scale-105"
-            }`}
-          >
-            <SkipForward className="w-4 md:w-5 h-4 md:h-5 mr-2" />
-            {showCelebration ? "Next" : "Skip"}
-          </Button>
-        </div>
+            <Button
+              size="lg"
+              variant="outline"
+              onClick={handleNextPhrase}
+              disabled={appState === "recording" || appState === "processing"}
+              className={`flex-1 md:w-40 h-12 md:h-14 text-base md:text-lg font-semibold border-2 border-[#5BA3E8] text-[#5BA3E8] hover:bg-[#5BA3E8]/10 bg-transparent transition-all duration-150 ${
+                buttonPressed ? "scale-95" : "scale-100 hover:scale-105"
+              }`}
+            >
+              <SkipForward className="w-4 md:w-5 h-4 md:h-5 mr-2" />
+              {showCelebration ? "Next" : "Skip"}
+            </Button>
+          </div>
+        )}
 
         {/* RECORDING STATUS - Show during recording/processing */}
-        {(isAudioRecording || appState === "processing") && (
+        {currentPhrase && (isAudioRecording || appState === "processing") && (
           <RecordingStatus
             isRecording={isAudioRecording}
             isProcessing={appState === "processing"}
@@ -1040,8 +1090,9 @@ export default function PronunciationPracticeSimple() {
           />
         )}
 
-        {/* SUCCESS/FAILURE MESSAGES - Show when not recording/processing */}
-        {!isAudioRecording &&
+        {/* SUCCESS/FAILURE MESSAGES - Show when not recording/processing and there's a current phrase */}
+        {currentPhrase &&
+          !isAudioRecording &&
           appState !== "processing" &&
           (lastResult || showCelebration) && (
             <div
