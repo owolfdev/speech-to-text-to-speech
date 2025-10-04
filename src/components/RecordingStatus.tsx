@@ -69,7 +69,7 @@ export default function RecordingStatus({
         ),
         message: isUrgent
           ? `⚠️ Recording will stop in ${timeRemaining} seconds!`
-          : "",
+          : "Speak clearly into your microphone",
         className: isUrgent
           ? "bg-orange-50 dark:bg-orange-900/20 border-orange-300 dark:border-orange-700"
           : "bg-green-50 dark:bg-green-900/20 border-green-200 dark:border-green-800",
@@ -108,11 +108,6 @@ export default function RecordingStatus({
         {/* Recording instructions */}
         {isRecording && (
           <div className="space-y-3">
-            <div className="flex items-center justify-center gap-2 text-xs text-muted-foreground">
-              <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
-              <span>Recording in progress...</span>
-            </div>
-
             {/* Progress bar */}
             <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2">
               <div
