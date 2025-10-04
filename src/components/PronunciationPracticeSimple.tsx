@@ -839,18 +839,18 @@ export default function PronunciationPracticeSimple() {
       {/* Main practice card */}
       <Card className="p-4 md:p-8 shadow-xl border-0 space-y-4 md:space-y-6">
         <div className="space-y-4">
-          <div className="flex items-center justify-end">
-            <div className="flex items-center gap-2">
+          <div className="w-full">
+            <div className="flex flex-col sm:flex-row gap-2 w-full">
               {/* Difficulty Filter Menu */}
-              <div className="relative" data-difficulty-menu>
+              <div className="relative flex-1" data-difficulty-menu>
                 <Button
                   variant="outline"
                   size="sm"
                   onClick={() => setShowDifficultyMenu(!showDifficultyMenu)}
-                  className="flex items-center gap-2 bg-white/90 hover:bg-white text-foreground border-[#5BA3E8]/30"
+                  className="w-full flex items-center justify-center gap-2 bg-white/90 hover:bg-white text-foreground border-[#5BA3E8]/30"
                 >
                   <Filter className="h-4 w-4" />
-                  <span className="hidden sm:inline">
+                  <span>
                     {difficultyFilter === "all"
                       ? "All Levels"
                       : difficultyFilter.charAt(0).toUpperCase() +
@@ -860,7 +860,7 @@ export default function PronunciationPracticeSimple() {
                 </Button>
 
                 {showDifficultyMenu && (
-                  <div className="absolute right-0 top-full mt-1 w-48 bg-white rounded-lg shadow-lg border border-gray-200 z-50">
+                  <div className="absolute left-0 right-0 top-full mt-1 bg-white rounded-lg shadow-lg border border-gray-200 z-50">
                     <div className="py-1">
                       {[
                         {
@@ -906,15 +906,15 @@ export default function PronunciationPracticeSimple() {
               </div>
 
               {/* Category Filter Menu */}
-              <div className="relative" data-category-menu>
+              <div className="relative flex-1" data-category-menu>
                 <Button
                   variant="outline"
                   size="sm"
                   onClick={() => setShowCategoryMenu(!showCategoryMenu)}
-                  className="flex items-center gap-2 bg-white/90 hover:bg-white text-foreground border-[#10B981]/30"
+                  className="w-full flex items-center justify-center gap-2 bg-white/90 hover:bg-white text-foreground border-[#10B981]/30"
                 >
                   <Filter className="h-4 w-4" />
-                  <span className="hidden sm:inline">
+                  <span>
                     {categoryFilter === "all"
                       ? "All Categories"
                       : categoryFilter.charAt(0).toUpperCase() +
@@ -924,7 +924,7 @@ export default function PronunciationPracticeSimple() {
                 </Button>
 
                 {showCategoryMenu && (
-                  <div className="absolute right-0 top-full mt-1 w-56 bg-white rounded-lg shadow-lg border border-gray-200 z-50 max-h-64 overflow-y-auto">
+                  <div className="absolute left-0 right-0 top-full mt-1 bg-white rounded-lg shadow-lg border border-gray-200 z-50 max-h-64 overflow-y-auto">
                     <div className="py-1">
                       {getUniqueCategories().map((option) => (
                         <button
