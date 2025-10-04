@@ -6,6 +6,8 @@ interface RecordingStatusProps {
   isRecording: boolean;
   isProcessing: boolean;
   recordingTime: number;
+  maxRecordingTime?: number;
+  isNearLimit?: boolean;
   className?: string;
 }
 
@@ -13,6 +15,8 @@ export default function RecordingStatus({
   isRecording,
   isProcessing,
   recordingTime,
+  maxRecordingTime = 30,
+  isNearLimit = false,
   className = "",
 }: RecordingStatusProps) {
   // Format time as MM:SS
@@ -35,12 +39,18 @@ export default function RecordingStatus({
     }
 
     if (isRecording) {
+      const timeRemaining = maxRecordingTime - recordingTime;
+      const isUrgent = timeRemaining <= 5;
+
       return {
         icon: <Mic className="w-6 h-6 text-red-500 animate-pulse" />,
         title: `Recording... ${formatTime(recordingTime)}`,
-        message: "Speak clearly into your microphone",
-        className:
-          "bg-red-50 dark:bg-red-900/20 border-red-200 dark:border-red-800",
+        message: isUrgent
+          ? `⚠️ Recording will stop in ${timeRemaining} seconds!`
+          : "Speak clearly into your microphone",
+        className: isUrgent
+          ? "bg-orange-50 dark:bg-orange-900/20 border-orange-300 dark:border-orange-700"
+          : "bg-red-50 dark:bg-red-900/20 border-red-200 dark:border-red-800",
       };
     }
 
@@ -75,13 +85,36 @@ export default function RecordingStatus({
 
         {/* Recording instructions */}
         {isRecording && (
-          <div className="space-y-2">
+          <div className="space-y-3">
             <div className="flex items-center justify-center gap-2 text-xs text-muted-foreground">
               <div className="w-2 h-2 bg-red-500 rounded-full animate-pulse"></div>
               <span>Recording in progress...</span>
             </div>
+
+            {/* Progress bar */}
+            <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2">
+              <div
+                className={`h-2 rounded-full transition-all duration-300 ${
+                  isNearLimit ? "bg-orange-500" : "bg-red-500"
+                }`}
+                style={{
+                  width: `${Math.min(
+                    (recordingTime / maxRecordingTime) * 100,
+                    100
+                  )}%`,
+                }}
+              ></div>
+            </div>
+
+            <div className="flex justify-between text-xs text-muted-foreground">
+              <span>{formatTime(recordingTime)}</span>
+              <span>{formatTime(maxRecordingTime)}</span>
+            </div>
+
             <p className="text-xs text-muted-foreground">
-              Click &quot;Stop Recording&quot; when you&apos;re finished
+              {isNearLimit
+                ? "Recording will stop automatically soon"
+                : 'Click "Stop Recording" when you\'re finished'}
             </p>
           </div>
         )}

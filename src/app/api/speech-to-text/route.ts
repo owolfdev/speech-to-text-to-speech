@@ -31,18 +31,70 @@ if (fs.existsSync(credentialsPath)) {
   });
 }
 
+// Simple in-memory rate limiting (in production, use Redis or similar)
+const rateLimitMap = new Map<string, { count: number; resetTime: number }>();
+const RATE_LIMIT_WINDOW = 60 * 1000; // 1 minute
+const RATE_LIMIT_MAX_REQUESTS = 10; // 10 requests per minute per IP
+
+function checkRateLimit(ip: string): boolean {
+  const now = Date.now();
+  const userLimit = rateLimitMap.get(ip);
+
+  if (!userLimit || now > userLimit.resetTime) {
+    rateLimitMap.set(ip, { count: 1, resetTime: now + RATE_LIMIT_WINDOW });
+    return true;
+  }
+
+  if (userLimit.count >= RATE_LIMIT_MAX_REQUESTS) {
+    return false;
+  }
+
+  userLimit.count++;
+  return true;
+}
+
 export async function POST(request: NextRequest) {
   try {
+    // Get client IP for rate limiting
+    const ip =
+      request.ip || request.headers.get("x-forwarded-for") || "unknown";
+
+    // Check rate limit
+    if (!checkRateLimit(ip)) {
+      console.log(`🚫 [API] Rate limit exceeded for IP: ${ip}`);
+      return NextResponse.json(
+        { error: "Too many requests. Please try again later." },
+        { status: 429 }
+      );
+    }
+
     const { audioData, mimeType } = await request.json();
 
     console.log("🎤 [API] Received request");
     console.log("📋 [API] MIME type:", mimeType);
     console.log("📊 [API] Audio data length:", audioData?.length);
+    console.log("🌐 [API] Client IP:", ip);
 
     if (!audioData) {
       return NextResponse.json(
         { error: "No audio data provided" },
         { status: 400 }
+      );
+    }
+
+    // Validate audio data size (10MB limit)
+    const maxAudioSize = 10 * 1024 * 1024; // 10MB
+    const audioSizeBytes = Buffer.byteLength(audioData, "base64");
+
+    if (audioSizeBytes > maxAudioSize) {
+      console.log(
+        `❌ [API] Audio too large: ${Math.round(
+          audioSizeBytes / 1024 / 1024
+        )}MB`
+      );
+      return NextResponse.json(
+        { error: "Audio file too large. Maximum size is 10MB." },
+        { status: 413 }
       );
     }
 

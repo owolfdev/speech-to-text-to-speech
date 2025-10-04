@@ -90,10 +90,14 @@ export default function PronunciationPracticeSimple() {
   const {
     isRecording: isAudioRecording,
     recordingTime,
+    maxRecordingTime,
+    isNearLimit,
     audioBlob,
     startRecording,
     stopRecording,
     resetRecording,
+    calculateRecordingTime,
+    validateAudioSize,
   } = useAudioRecorder();
 
   // Load all phrases on component mount
@@ -108,6 +112,16 @@ export default function PronunciationPracticeSimple() {
     };
     loadAllPhrases();
   }, []);
+
+  // Cleanup recording when component unmounts
+  useEffect(() => {
+    return () => {
+      if (isAudioRecording) {
+        console.log("🧹 Component unmounting, stopping recording...");
+        stopRecording();
+      }
+    };
+  }, [isAudioRecording, stopRecording]);
 
   // Load phrases based on difficulty and category filters
   useEffect(() => {
@@ -293,8 +307,17 @@ export default function PronunciationPracticeSimple() {
       // Clear previous audio data when starting new recording
       resetRecording();
 
-      // Start recording
-      await startRecording();
+      // Calculate appropriate recording time based on current phrase
+      const recordingTimeLimit = currentPhrase
+        ? calculateRecordingTime(currentPhrase.text)
+        : 30; // Default 30 seconds
+
+      console.log(
+        `⏱️ Recording time limit set to ${recordingTimeLimit} seconds`
+      );
+
+      // Start recording with timeout
+      await startRecording(recordingTimeLimit, handleStopRecording);
       setAppState("recording");
 
       console.log("✅ Recording started successfully");
@@ -358,6 +381,18 @@ export default function PronunciationPracticeSimple() {
       }
 
       console.log("🔄 Auto-processing audio...");
+
+      // Validate audio size before processing
+      const validation = validateAudioSize(blob);
+      if (!validation.isValid) {
+        console.log("❌ Audio validation failed:", validation.error);
+        setAppState("idle");
+        setLastResult({
+          success: false,
+          message: validation.error || "Audio file is too large or too long.",
+        });
+        return;
+      }
 
       try {
         console.log("🔄 Step 1: Converting audio to base64...");
@@ -1087,6 +1122,8 @@ export default function PronunciationPracticeSimple() {
             isRecording={isAudioRecording}
             isProcessing={appState === "processing"}
             recordingTime={recordingTime}
+            maxRecordingTime={maxRecordingTime}
+            isNearLimit={isNearLimit}
           />
         )}
 
