@@ -1,6 +1,7 @@
 "use client";
 
 import { Mic, MicOff, Loader2 } from "lucide-react";
+import { ReactNode } from "react";
 
 interface RecordingStatusProps {
   isRecording: boolean;
@@ -29,7 +30,12 @@ export default function RecordingStatus({
   };
 
   // Get status info
-  const getStatusInfo = () => {
+  const getStatusInfo = (): {
+    icon: ReactNode;
+    title: ReactNode;
+    message: string;
+    className: string;
+  } => {
     if (isProcessing) {
       return {
         icon: <Loader2 className="w-6 h-6 animate-spin text-[#5BA3E8]" />,
@@ -43,7 +49,7 @@ export default function RecordingStatus({
     if (isRequestingPermission) {
       return {
         icon: <Loader2 className="w-6 h-6 animate-spin text-orange-500" />,
-        title: "Requesting microphone access...",
+        title: "Please wait. Requesting microphone access...",
         message: "Please allow microphone access to start recording",
         className:
           "bg-orange-50 dark:bg-orange-900/20 border-orange-200 dark:border-orange-800",
@@ -55,14 +61,18 @@ export default function RecordingStatus({
       const isUrgent = timeRemaining <= 5;
 
       return {
-        icon: <Mic className="w-6 h-6 text-red-500 animate-pulse" />,
-        title: `Recording... ${formatTime(recordingTime)}`,
+        icon: <Mic className="w-6 h-6 text-green-500 animate-pulse" />,
+        title: (
+          <span className="text-2xl font-bold text-green-600 dark:text-green-400 animate-pulse">
+            Recording... {formatTime(recordingTime)}
+          </span>
+        ),
         message: isUrgent
           ? `⚠️ Recording will stop in ${timeRemaining} seconds!`
           : "Speak clearly into your microphone",
         className: isUrgent
           ? "bg-orange-50 dark:bg-orange-900/20 border-orange-300 dark:border-orange-700"
-          : "bg-red-50 dark:bg-red-900/20 border-red-200 dark:border-red-800",
+          : "bg-green-50 dark:bg-green-900/20 border-green-200 dark:border-green-800",
       };
     }
 
@@ -85,9 +95,9 @@ export default function RecordingStatus({
         {/* Icon and title */}
         <div className="flex items-center justify-center gap-3">
           {statusInfo.icon}
-          <h3 className="text-lg md:text-xl font-semibold">
+          <div className="text-lg md:text-xl font-semibold">
             {statusInfo.title}
-          </h3>
+          </div>
         </div>
 
         {/* Message */}
@@ -99,7 +109,7 @@ export default function RecordingStatus({
         {isRecording && (
           <div className="space-y-3">
             <div className="flex items-center justify-center gap-2 text-xs text-muted-foreground">
-              <div className="w-2 h-2 bg-red-500 rounded-full animate-pulse"></div>
+              <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
               <span>Recording in progress...</span>
             </div>
 
@@ -107,7 +117,7 @@ export default function RecordingStatus({
             <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2">
               <div
                 className={`h-2 rounded-full transition-all duration-300 ${
-                  isNearLimit ? "bg-orange-500" : "bg-red-500"
+                  isNearLimit ? "bg-orange-500" : "bg-green-500"
                 }`}
                 style={{
                   width: `${Math.min(
