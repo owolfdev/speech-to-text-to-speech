@@ -957,7 +957,7 @@ export default function PronunciationPracticeSimple() {
             <div className="p-4 md:p-6 bg-[#5BA3E8]/10 rounded-xl border-2 border-[#5BA3E8]/30">
               {currentPhrase ? (
                 <>
-                  <p className="text-2xl md:text-3xl font-medium text-black text-center text-balance mb-2">
+                  <p className="text-2xl md:text-3xl font-medium text-black text-center text-balance mb-6">
                     {currentPhrase.text}
                   </p>
 
@@ -965,7 +965,7 @@ export default function PronunciationPracticeSimple() {
                   <div className="flex justify-between items-center -mx-2 -mb-2">
                     <TTSAudioPlayer
                       text={currentPhrase.text}
-                      className="[&>button]:h-10 [&>button]:w-10 md:[&>button]:h-8 md:[&>button]:w-8"
+                      className="[&>button]:!h-14 [&>button]:!w-14 md:[&>button]:!h-12 md:[&>button]:!w-12 [&>button>svg]:!w-6 [&>button>svg]:!h-6"
                       disabled={!currentPhrase}
                       onPlayStart={handlePlayStart}
                       onPlayEnd={handlePlayEnd}
@@ -973,9 +973,9 @@ export default function PronunciationPracticeSimple() {
                     />
 
                     {/* Center section with phrase number and difficulty badge */}
-                    <div className="flex items-center gap-3">
+                    <div className="flex items-center gap-6">
                       <span className="text-sm font-medium text-muted-foreground">
-                        {currentPhraseIndex}/{totalPhraseCount}
+                        {currentPhraseIndex} of {totalPhraseCount}
                       </span>
                       <Badge
                         className={getDifficultyColor(currentPhrase.difficulty)}
@@ -988,10 +988,10 @@ export default function PronunciationPracticeSimple() {
                       variant="ghost"
                       size="icon"
                       onClick={() => setShowTranslation(!showTranslation)}
-                      className="h-10 w-10 md:h-8 md:w-8 rounded-full hover:bg-[#5BA3E8]/10"
+                      className="h-14 w-14 md:h-12 md:w-12 rounded-full hover:bg-[#5BA3E8]/10"
                       title="Show translation"
                     >
-                      <Info className="w-5 h-5 md:w-4 md:h-4 text-[#5BA3E8]" />
+                      <Info className="w-7 h-7 md:w-6 md:h-6 text-[#5BA3E8]" />
                     </Button>
                   </div>
                 </>
