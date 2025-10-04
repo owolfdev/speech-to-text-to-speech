@@ -69,7 +69,7 @@ export default function RecordingStatus({
         ),
         message: isUrgent
           ? `⚠️ Recording will stop in ${timeRemaining} seconds!`
-          : "Speak clearly into your microphone",
+          : "",
         className: isUrgent
           ? "bg-orange-50 dark:bg-orange-900/20 border-orange-300 dark:border-orange-700"
           : "bg-green-50 dark:bg-green-900/20 border-green-200 dark:border-green-800",
