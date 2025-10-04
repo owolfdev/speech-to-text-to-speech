@@ -957,7 +957,7 @@ export default function PronunciationPracticeSimple() {
             <div className="p-4 md:p-6 bg-[#5BA3E8]/10 rounded-xl border-2 border-[#5BA3E8]/30">
               {currentPhrase ? (
                 <>
-                  <p className="text-2xl md:text-3xl font-medium text-black text-center text-balance mb-4 mt-2">
+                  <p className="text-2xl md:text-3xl font-medium text-black text-center text-balance mb-3 mt-4">
                     {currentPhrase.text}
                   </p>
 
