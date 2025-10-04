@@ -12,6 +12,8 @@ interface AudioRecorderState {
   audioBlob: Blob | null;
   audioUrl: string | null;
   isNearLimit: boolean;
+  isRequestingPermission: boolean;
+  isReady: boolean;
 }
 
 export function useAudioRecorder() {
@@ -25,6 +27,8 @@ export function useAudioRecorder() {
     audioBlob: null,
     audioUrl: null,
     isNearLimit: false,
+    isRequestingPermission: false,
+    isReady: false,
   });
 
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
@@ -33,9 +37,56 @@ export function useAudioRecorder() {
   const timeoutRef = useRef<NodeJS.Timeout | null>(null);
   const onTimeoutCallbackRef = useRef<(() => void) | null>(null);
 
+  // Cache for MIME type detection
+  const cachedMimeTypeRef = useRef<string | null>(null);
+  const isPreparingRef = useRef<boolean>(false);
+
+  // Pre-detect supported MIME type (call this early)
+  const detectMimeType = useCallback((): string => {
+    if (cachedMimeTypeRef.current) {
+      return cachedMimeTypeRef.current;
+    }
+
+    console.log("🔍 Detecting supported MIME type...");
+
+    const mimeTypes = [
+      "audio/webm;codecs=opus",
+      "audio/mp4",
+      "audio/webm",
+      "audio/ogg;codecs=opus",
+      "audio/ogg",
+    ];
+
+    for (const mimeType of mimeTypes) {
+      if (MediaRecorder.isTypeSupported(mimeType)) {
+        console.log(`✅ Using cached MIME type: ${mimeType}`);
+        cachedMimeTypeRef.current = mimeType;
+        return mimeType;
+      }
+    }
+
+    console.log("⚠️ Using browser default MIME type");
+    cachedMimeTypeRef.current = "";
+    return "";
+  }, []);
+
   const startRecording = useCallback(
     async (maxTime?: number, onTimeout?: () => void) => {
       try {
+        // Prevent multiple simultaneous requests
+        if (isPreparingRef.current) {
+          console.log("⏳ Already preparing recording...");
+          return;
+        }
+
+        isPreparingRef.current = true;
+
+        // Immediate UI feedback
+        setState((prev) => ({
+          ...prev,
+          isRequestingPermission: true,
+        }));
+
         console.log("🎙️ Requesting microphone access...");
 
         // Check if mediaDevices is supported
@@ -46,6 +97,9 @@ export function useAudioRecorder() {
         }
 
         console.log("✅ MediaDevices API available");
+
+        // Get cached MIME type (no delay)
+        const mimeType = detectMimeType();
 
         const stream = await navigator.mediaDevices.getUserMedia({
           audio: {
@@ -60,30 +114,6 @@ export function useAudioRecorder() {
         console.log("🎤 Audio tracks:", stream.getAudioTracks().length);
 
         streamRef.current = stream;
-
-        // Detect supported MIME type for better mobile compatibility
-        let mimeType = "audio/webm;codecs=opus";
-
-        if (!MediaRecorder.isTypeSupported(mimeType)) {
-          console.log("⚠️ WEBM Opus not supported, trying fallbacks...");
-          // Fallback for Safari/iOS
-          if (MediaRecorder.isTypeSupported("audio/mp4")) {
-            mimeType = "audio/mp4";
-            console.log("✅ Using audio/mp4");
-          } else if (MediaRecorder.isTypeSupported("audio/webm")) {
-            mimeType = "audio/webm";
-            console.log("✅ Using audio/webm");
-          } else if (MediaRecorder.isTypeSupported("audio/ogg")) {
-            mimeType = "audio/ogg";
-            console.log("✅ Using audio/ogg");
-          } else {
-            // Let the browser choose
-            mimeType = "";
-            console.log("⚠️ Using browser default MIME type");
-          }
-        } else {
-          console.log("✅ Using audio/webm;codecs=opus");
-        }
 
         const options = mimeType ? { mimeType } : {};
         const mediaRecorder = new MediaRecorder(stream, options);
@@ -117,15 +147,19 @@ export function useAudioRecorder() {
           }));
         };
 
+        const recordingMaxTime = maxTime || 30;
+
+        // Start recording immediately
         mediaRecorder.start(1000); // Collect data every second
         console.log("🔴 Recording started!");
 
-        const recordingMaxTime = maxTime || 30;
-
+        // Update state atomically
         setState((prev) => ({
           ...prev,
           isRecording: true,
           isPaused: false,
+          isRequestingPermission: false,
+          isReady: true,
           mediaRecorder,
           audioChunks: [],
           audioBlob: null,
@@ -168,16 +202,27 @@ export function useAudioRecorder() {
             onTimeoutCallbackRef.current();
           }
         }, recordingMaxTime * 1000);
+
+        isPreparingRef.current = false;
       } catch (error) {
         console.error("❌ Error starting recording:", error);
         console.error("Error details:", {
           name: (error as Error).name,
           message: (error as Error).message,
         });
+
+        // Reset state on error
+        setState((prev) => ({
+          ...prev,
+          isRequestingPermission: false,
+          isReady: false,
+        }));
+
+        isPreparingRef.current = false;
         throw error;
       }
     },
-    []
+    [detectMimeType]
   );
 
   const stopRecording = useCallback(() => {
@@ -203,6 +248,7 @@ export function useAudioRecorder() {
       isPaused: false,
       recordingTime: 0,
       isNearLimit: false,
+      isRequestingPermission: false,
     }));
   }, [state.isRecording]);
 
@@ -246,6 +292,8 @@ export function useAudioRecorder() {
       audioBlob: null,
       audioUrl: null,
       isNearLimit: false,
+      isRequestingPermission: false,
+      isReady: false,
     });
   }, []);
 
@@ -316,6 +364,14 @@ export function useAudioRecorder() {
     [state.recordingTime]
   );
 
+  // Pre-initialize MIME type detection (call this early in component lifecycle)
+  const preInitialize = useCallback(() => {
+    if (!cachedMimeTypeRef.current) {
+      detectMimeType();
+      console.log("🚀 Pre-initialized MIME type detection");
+    }
+  }, [detectMimeType]);
+
   return {
     ...state,
     startRecording,
@@ -326,5 +382,6 @@ export function useAudioRecorder() {
     convertToBase64,
     calculateRecordingTime,
     validateAudioSize,
+    preInitialize,
   };
 }

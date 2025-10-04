@@ -92,12 +92,14 @@ export default function PronunciationPracticeSimple() {
     recordingTime,
     maxRecordingTime,
     isNearLimit,
+    isRequestingPermission,
     audioBlob,
     startRecording,
     stopRecording,
     resetRecording,
     calculateRecordingTime,
     validateAudioSize,
+    preInitialize,
   } = useAudioRecorder();
 
   // Load all phrases on component mount
@@ -111,7 +113,10 @@ export default function PronunciationPracticeSimple() {
       }
     };
     loadAllPhrases();
-  }, []);
+
+    // Pre-initialize audio recorder for faster recording start
+    preInitialize();
+  }, [preInitialize]);
 
   // Cleanup recording when component unmounts
   useEffect(() => {
@@ -1123,15 +1128,19 @@ export default function PronunciationPracticeSimple() {
         )}
 
         {/* RECORDING STATUS - Show during recording/processing */}
-        {currentPhrase && (isAudioRecording || appState === "processing") && (
-          <RecordingStatus
-            isRecording={isAudioRecording}
-            isProcessing={appState === "processing"}
-            recordingTime={recordingTime}
-            maxRecordingTime={maxRecordingTime}
-            isNearLimit={isNearLimit}
-          />
-        )}
+        {currentPhrase &&
+          (isAudioRecording ||
+            appState === "processing" ||
+            isRequestingPermission) && (
+            <RecordingStatus
+              isRecording={isAudioRecording}
+              isProcessing={appState === "processing"}
+              recordingTime={recordingTime}
+              maxRecordingTime={maxRecordingTime}
+              isNearLimit={isNearLimit}
+              isRequestingPermission={isRequestingPermission}
+            />
+          )}
 
         {/* SUCCESS/FAILURE MESSAGES - Show when not recording/processing and there's a current phrase */}
         {currentPhrase &&

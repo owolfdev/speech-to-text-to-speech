@@ -8,6 +8,7 @@ interface RecordingStatusProps {
   recordingTime: number;
   maxRecordingTime?: number;
   isNearLimit?: boolean;
+  isRequestingPermission?: boolean;
   className?: string;
 }
 
@@ -17,6 +18,7 @@ export default function RecordingStatus({
   recordingTime,
   maxRecordingTime = 30,
   isNearLimit = false,
+  isRequestingPermission = false,
   className = "",
 }: RecordingStatusProps) {
   // Format time as MM:SS
@@ -35,6 +37,16 @@ export default function RecordingStatus({
         message: "Please wait while we analyze your pronunciation",
         className:
           "bg-blue-50 dark:bg-blue-900/20 border-blue-200 dark:border-blue-800",
+      };
+    }
+
+    if (isRequestingPermission) {
+      return {
+        icon: <Loader2 className="w-6 h-6 animate-spin text-orange-500" />,
+        title: "Requesting microphone access...",
+        message: "Please allow microphone access to start recording",
+        className:
+          "bg-orange-50 dark:bg-orange-900/20 border-orange-200 dark:border-orange-800",
       };
     }
 
