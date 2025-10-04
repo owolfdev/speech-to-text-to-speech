@@ -274,7 +274,7 @@ export function useAudioRecorder() {
     const charCount = phrase.length;
 
     // Base time: 3 seconds minimum
-    let baseTime = 3;
+    const baseTime = 3;
 
     // Add time based on word count (1.5 seconds per word)
     const wordTime = wordCount * 1.5;

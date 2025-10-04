@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { Button } from "./ui/button";
+import Image from "next/image";
 
 interface BeforeInstallPromptEvent extends Event {
   prompt(): Promise<void>;
@@ -52,9 +53,11 @@ export function PWAInstallPrompt() {
     <div className="fixed bottom-4 right-4 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-lg p-4 max-w-sm z-50">
       <div className="flex items-center gap-3">
         <div className="flex-shrink-0">
-          <img
+          <Image
             src="/app-icon.png"
             alt="App Icon"
+            width={48}
+            height={48}
             className="w-12 h-12 rounded-lg"
           />
         </div>

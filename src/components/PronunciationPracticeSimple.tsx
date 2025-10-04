@@ -498,7 +498,13 @@ export default function PronunciationPracticeSimple() {
         setAppState("idle");
       }
     },
-    [currentPhrase, successfulReps, requiredReps, resetRecording]
+    [
+      currentPhrase,
+      successfulReps,
+      requiredReps,
+      resetRecording,
+      validateAudioSize,
+    ]
   );
 
   // Listen for audio blob changes and auto-process when available
