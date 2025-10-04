@@ -48,8 +48,8 @@ export default function RecordingStatus({
 
     if (isRequestingPermission) {
       return {
-        icon: <Loader2 className="w-6 h-6 animate-spin text-red-500" />,
-        title: "🛑 Please wait. Requesting microphone access...",
+        icon: <Loader2 className="w-6 h-6 animate-spin" />,
+        title: "✋ Please wait. Requesting microphone access...",
         message: "Please allow microphone access to start recording",
         className:
           "bg-red-50 dark:bg-red-900/20 border-red-200 dark:border-red-800",
