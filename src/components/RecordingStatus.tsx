@@ -123,11 +123,6 @@ export default function RecordingStatus({
               ></div>
             </div>
 
-            <div className="flex justify-between text-xs text-muted-foreground">
-              <span>{formatTime(recordingTime)}</span>
-              <span>{formatTime(maxRecordingTime)}</span>
-            </div>
-
             <p className="text-xs text-muted-foreground">
               {isNearLimit
                 ? "Recording will stop automatically soon"
