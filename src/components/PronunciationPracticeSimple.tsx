@@ -839,11 +839,7 @@ export default function PronunciationPracticeSimple() {
       {/* Main practice card */}
       <Card className="p-4 md:p-8 shadow-xl border-0 space-y-4 md:space-y-6">
         <div className="space-y-4">
-          <div className="flex items-center justify-between">
-            <h2 className="text-sm md:text-lg font-semibold text-foreground">
-              <span className="hidden md:inline">Current Phrase </span>
-              {currentPhraseIndex}/{totalPhraseCount}
-            </h2>
+          <div className="flex items-center justify-end">
             <div className="flex items-center gap-2">
               {/* Difficulty Filter Menu */}
               <div className="relative" data-difficulty-menu>
@@ -953,12 +949,6 @@ export default function PronunciationPracticeSimple() {
                   </div>
                 )}
               </div>
-
-              {currentPhrase && (
-                <Badge className={getDifficultyColor(currentPhrase.difficulty)}>
-                  {currentPhrase.difficulty}
-                </Badge>
-              )}
             </div>
           </div>
 
@@ -981,6 +971,18 @@ export default function PronunciationPracticeSimple() {
                       onPlayEnd={handlePlayEnd}
                       onError={handlePlayError}
                     />
+
+                    {/* Center section with phrase number and difficulty badge */}
+                    <div className="flex items-center gap-3">
+                      <span className="text-sm font-medium text-muted-foreground">
+                        {currentPhraseIndex}/{totalPhraseCount}
+                      </span>
+                      <Badge
+                        className={getDifficultyColor(currentPhrase.difficulty)}
+                      >
+                        {currentPhrase.difficulty}
+                      </Badge>
+                    </div>
 
                     <Button
                       variant="ghost"
