@@ -840,7 +840,7 @@ export default function PronunciationPracticeSimple() {
       <Card className="p-4 md:p-8 shadow-xl border-0 space-y-4 md:space-y-6">
         <div className="space-y-4">
           <div className="w-full">
-            <div className="flex flex-col sm:flex-row gap-2 w-full">
+            <div className="flex flex-row gap-2 w-full">
               {/* Difficulty Filter Menu */}
               <div className="relative flex-1" data-difficulty-menu>
                 <Button
@@ -957,7 +957,7 @@ export default function PronunciationPracticeSimple() {
             <div className="p-4 md:p-6 bg-[#5BA3E8]/10 rounded-xl border-2 border-[#5BA3E8]/30">
               {currentPhrase ? (
                 <>
-                  <p className="text-2xl md:text-3xl font-medium text-black text-center text-balance mb-6">
+                  <p className="text-2xl md:text-3xl font-medium text-black text-center text-balance mb-4 mt-2">
                     {currentPhrase.text}
                   </p>
 
