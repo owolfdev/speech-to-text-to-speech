@@ -102,12 +102,18 @@ export default function PronunciationPracticeSimple() {
     preInitialize,
   } = useAudioRecorder();
 
-  // Load filter settings from localStorage on mount
+  // Load filter settings and phrase from localStorage on mount
   useEffect(() => {
     const savedDifficulty = localStorage.getItem(
       "pronunciation-difficulty-filter"
     );
     const savedCategory = localStorage.getItem("pronunciation-category-filter");
+    const savedPhraseId = localStorage.getItem(
+      "pronunciation-current-phrase-id"
+    );
+    const savedPhraseIndex = localStorage.getItem(
+      "pronunciation-current-phrase-index"
+    );
 
     if (
       savedDifficulty &&
@@ -121,6 +127,12 @@ export default function PronunciationPracticeSimple() {
     if (savedCategory) {
       setCategoryFilter(savedCategory);
     }
+
+    // Store the saved phrase info to restore after phrases are loaded
+    if (savedPhraseId && savedPhraseIndex) {
+      setCurrentPhraseIndex(parseInt(savedPhraseIndex, 10));
+      // We'll restore the phrase after phrases are loaded
+    }
   }, []);
 
   // Save difficulty filter to localStorage when it changes
@@ -132,6 +144,17 @@ export default function PronunciationPracticeSimple() {
   useEffect(() => {
     localStorage.setItem("pronunciation-category-filter", categoryFilter);
   }, [categoryFilter]);
+
+  // Save current phrase to localStorage when it changes
+  useEffect(() => {
+    if (currentPhrase) {
+      localStorage.setItem("pronunciation-current-phrase-id", currentPhrase.id);
+      localStorage.setItem(
+        "pronunciation-current-phrase-index",
+        currentPhraseIndex.toString()
+      );
+    }
+  }, [currentPhrase, currentPhraseIndex]);
 
   // Load all phrases on component mount
   useEffect(() => {
@@ -179,21 +202,38 @@ export default function PronunciationPracticeSimple() {
         setTotalPhraseCount(phrases.length); // Set total count to filtered phrases count
 
         if (phrases.length > 0) {
-          // Check if previous phrase is still in the filtered set
-          const previousPhrase = previousPhraseRef.current;
-          if (
-            previousPhrase &&
-            phrases.some((p) => p.id === previousPhrase.id)
+          // Check for saved phrase from localStorage first
+          const savedPhraseId = localStorage.getItem(
+            "pronunciation-current-phrase-id"
+          );
+          const savedPhraseIndex = localStorage.getItem(
+            "pronunciation-current-phrase-index"
+          );
+
+          let phraseToRestore = null;
+          let phraseIndex = 0;
+
+          if (savedPhraseId && phrases.some((p) => p.id === savedPhraseId)) {
+            // Saved phrase is still in filtered set
+            phraseIndex = phrases.findIndex((p) => p.id === savedPhraseId);
+            phraseToRestore = phrases[phraseIndex];
+          } else if (
+            previousPhraseRef.current &&
+            phrases.some((p) => p.id === previousPhraseRef.current?.id)
           ) {
-            // Previous phrase is still in filtered set, find its new index
-            const newIndex = phrases.findIndex(
-              (p) => p.id === previousPhrase.id
+            // Fall back to previous phrase if saved phrase not found
+            phraseIndex = phrases.findIndex(
+              (p) => p.id === previousPhraseRef.current?.id
             );
-            setCurrentFilteredIndex(newIndex);
-            setCurrentPhrase(phrases[newIndex]);
-            setCurrentPhraseIndex(newIndex + 1);
+            phraseToRestore = phrases[phraseIndex];
+          }
+
+          if (phraseToRestore) {
+            setCurrentFilteredIndex(phraseIndex);
+            setCurrentPhrase(phraseToRestore);
+            setCurrentPhraseIndex(phraseIndex + 1);
           } else {
-            // Previous phrase is not in filtered set, or there was no previous phrase
+            // No saved or previous phrase found, start with first phrase
             setCurrentFilteredIndex(0);
             setCurrentPhrase(phrases[0]);
             setCurrentPhraseIndex(1);

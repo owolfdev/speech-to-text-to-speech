@@ -66,7 +66,7 @@ export default function RecordingStatus({
         ),
         message: "Speak clearly into your microphone",
         className:
-          "bg-green-50 dark:bg-green-900/20 border-green-200 dark:border-green-800",
+          "bg-green-50 dark:bg-green-900/20 border-red-200 dark:border-red-800",
       };
     }
 
