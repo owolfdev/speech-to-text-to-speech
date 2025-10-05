@@ -1223,16 +1223,16 @@ export default function PronunciationPracticeSimple() {
             <div
               className={`p-4 md:p-6 rounded-xl border-2 ${
                 showCelebration
-                  ? "bg-green-50 dark:bg-green-900/20 border-green-200 dark:border-green-800 animate-in fade-in slide-in-from-bottom-4"
+                  ? "bg-violet-50 dark:bg-violet-900/20 border-violet-200 dark:border-violet-800 animate-in fade-in slide-in-from-bottom-4"
                   : lastResult?.success
-                  ? "bg-green-50 dark:bg-green-900/20 border-green-200 dark:border-green-800"
+                  ? "bg-violet-50 dark:bg-violet-900/20 border-violet-200 dark:border-violet-800"
                   : "bg-yellow-50 dark:bg-yellow-900/20 border-yellow-200 dark:border-yellow-800"
               }`}
             >
               <div className="text-center space-y-2">
                 {showCelebration ? (
                   <>
-                    <p className="text-xl md:text-2xl font-bold text-green-700 dark:text-green-300">
+                    <p className="text-xl md:text-2xl font-bold text-violet-700 dark:text-violet-300">
                       🎉 Phrase Mastered!
                     </p>
                     <p className="text-sm md:text-base text-muted-foreground">
@@ -1245,7 +1245,7 @@ export default function PronunciationPracticeSimple() {
                     <p
                       className={`${
                         lastResult.success
-                          ? "text-green-700 dark:text-green-300"
+                          ? "text-violet-700 dark:text-violet-300"
                           : "text-yellow-700 dark:text-yellow-300"
                       }`}
                     >
