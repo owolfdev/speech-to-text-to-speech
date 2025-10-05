@@ -28,6 +28,7 @@ import {
   X,
   Filter,
   ChevronDown,
+  Loader2,
 } from "lucide-react";
 import Image from "next/image";
 import { useAudioRecorder } from "@/hooks/useAudioRecorder";
@@ -73,6 +74,10 @@ export default function PronunciationPracticeSimple() {
   const [phraseSetFilter, setPhraseSetFilter] = useState<string>("all");
   const [showPhraseSetMenu, setShowPhraseSetMenu] = useState(false);
   const [availablePhraseSets, setAvailablePhraseSets] = useState<string[]>([]);
+
+  // Loading state
+  const [isLoadingPhrases, setIsLoadingPhrases] = useState(true);
+  const [isLoadingPhraseSets, setIsLoadingPhraseSets] = useState(false);
 
   // Simple feedback state
   const [lastResult, setLastResult] = useState<{
@@ -184,10 +189,13 @@ export default function PronunciationPracticeSimple() {
   useEffect(() => {
     const loadAllPhrases = async () => {
       try {
+        setIsLoadingPhrases(true);
         const phrases = await getAllPhrases();
         setAllPhrases(phrases);
       } catch (error) {
         console.error("Error loading all phrases:", error);
+      } finally {
+        setIsLoadingPhrases(false);
       }
     };
     loadAllPhrases();
@@ -292,10 +300,13 @@ export default function PronunciationPracticeSimple() {
   useEffect(() => {
     const loadPhraseSets = async () => {
       try {
+        setIsLoadingPhraseSets(true);
         const phraseSets = await getAvailablePhraseSets();
         setAvailablePhraseSets(phraseSets);
       } catch (error) {
         console.error("Error loading phrase sets:", error);
+      } finally {
+        setIsLoadingPhraseSets(false);
       }
     };
 
@@ -879,25 +890,111 @@ export default function PronunciationPracticeSimple() {
     }
   };
 
-  // Show loading state only when we haven't loaded any data yet
-  if (allPhrases.length === 0) {
+  // Show loading state when we're loading phrases or haven't loaded any data yet
+  if (isLoadingPhrases || allPhrases.length === 0) {
     return (
       <div className="max-w-2xl mx-auto space-y-4 md:space-y-6">
+        {/* Header with animated app icon */}
         <div className="flex items-center justify-center gap-3">
-          <Image
-            src="/app-icon.png"
-            alt="Répéter"
-            width={48}
-            height={48}
-            className="rounded-xl"
-          />
-          <h1 className="text-4xl md:text-5xl font-bold text-white">Répéter</h1>
-        </div>
-        <Card className="p-8 shadow-xl border-0">
-          <div className="text-center">
-            <p className="text-lg text-muted-foreground">Loading...</p>
+          <div className="relative">
+            <Image
+              src="/app-icon.png"
+              alt="Répéter"
+              width={48}
+              height={48}
+              className="rounded-xl animate-pulse"
+            />
+            <div className="absolute inset-0 rounded-xl bg-[#5BA3E8]/20 animate-ping"></div>
           </div>
-        </Card>
+          <h1 className="text-4xl md:text-5xl font-bold text-white animate-pulse">
+            Répéter
+          </h1>
+        </div>
+
+        {/* Skeleton cards that match the actual layout */}
+        <div className="space-y-4 md:space-y-6">
+          {/* Stats skeleton */}
+          <Card className="p-4 md:p-6 shadow-xl border-0">
+            <div className="flex items-center justify-center gap-2 text-[#5BA3E8] mb-4">
+              <Loader2 className="w-4 h-4 animate-spin" />
+              <span className="text-sm font-medium">Loading phrases...</span>
+            </div>
+            <div className="flex items-center justify-around gap-2 md:gap-4">
+              <div className="text-center space-y-2">
+                <div className="w-12 h-8 bg-gray-200 dark:bg-gray-700 rounded animate-pulse mx-auto"></div>
+                <div className="w-8 h-4 bg-gray-200 dark:bg-gray-700 rounded animate-pulse mx-auto"></div>
+              </div>
+              <div className="h-10 md:h-12 w-px bg-gray-200 dark:bg-gray-700"></div>
+              <div className="text-center space-y-2">
+                <div className="w-12 h-8 bg-gray-200 dark:bg-gray-700 rounded animate-pulse mx-auto"></div>
+                <div className="w-12 h-4 bg-gray-200 dark:bg-gray-700 rounded animate-pulse mx-auto"></div>
+              </div>
+              <div className="h-10 md:h-12 w-px bg-gray-200 dark:bg-gray-700"></div>
+              <div className="text-center space-y-2">
+                <div className="w-16 h-8 bg-gray-200 dark:bg-gray-700 rounded animate-pulse mx-auto"></div>
+                <div className="w-16 h-4 bg-gray-200 dark:bg-gray-700 rounded animate-pulse mx-auto"></div>
+              </div>
+            </div>
+          </Card>
+
+          {/* Main practice card skeleton */}
+          <Card className="p-4 md:p-8 shadow-xl border-0 space-y-4 md:space-y-6">
+            {/* Filter skeleton */}
+            <div className="space-y-4">
+              <div className="w-full">
+                <div className="flex flex-row gap-2 w-full">
+                  <div className="relative flex-1">
+                    <div className="w-full h-10 bg-gray-200 dark:bg-gray-700 rounded-md animate-pulse"></div>
+                  </div>
+                  <div className="relative flex-1">
+                    <div className="w-full h-10 bg-gray-200 dark:bg-gray-700 rounded-md animate-pulse"></div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Phrase display skeleton */}
+            <div className="space-y-3">
+              <div className="p-4 md:p-6 bg-[#5BA3E8]/10 rounded-xl border-2 border-[#5BA3E8]/30">
+                <div className="space-y-4">
+                  <div className="w-3/4 h-8 bg-gray-200 dark:bg-gray-700 rounded mx-auto animate-pulse"></div>
+                  <div className="w-1/2 h-6 bg-gray-200 dark:bg-gray-700 rounded mx-auto animate-pulse"></div>
+
+                  {/* Button controls skeleton */}
+                  <div className="flex justify-between items-center -mx-2 -mb-2">
+                    <div className="w-14 h-14 bg-gray-200 dark:bg-gray-700 rounded-full animate-pulse"></div>
+                    <div className="flex items-center gap-6">
+                      <div className="w-20 h-4 bg-gray-200 dark:bg-gray-700 rounded animate-pulse"></div>
+                      <div className="w-16 h-6 bg-gray-200 dark:bg-gray-700 rounded-full animate-pulse"></div>
+                    </div>
+                    <div className="w-14 h-14 bg-gray-200 dark:bg-gray-700 rounded-full animate-pulse"></div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Recording controls skeleton */}
+            <div className="flex flex-col items-center space-y-4">
+              <div className="flex items-center gap-4">
+                <div className="w-12 h-12 bg-gray-200 dark:bg-gray-700 rounded-full animate-pulse"></div>
+                <div className="w-20 h-12 bg-gray-200 dark:bg-gray-700 rounded-full animate-pulse"></div>
+                <div className="w-12 h-12 bg-gray-200 dark:bg-gray-700 rounded-full animate-pulse"></div>
+              </div>
+              <div className="w-full max-w-md h-12 bg-gray-200 dark:bg-gray-700 rounded-full animate-pulse"></div>
+            </div>
+          </Card>
+        </div>
+
+        {/* Loading tips */}
+        <div className="text-center space-y-2">
+          <p className="text-sm text-muted-foreground">
+            💡 <strong>Tip:</strong> Make sure you have a good internet
+            connection
+          </p>
+          <p className="text-xs text-muted-foreground">
+            Loading phrase sets and difficulty levels...
+          </p>
+        </div>
       </div>
     );
   }
@@ -905,7 +1002,7 @@ export default function PronunciationPracticeSimple() {
   const buttonState = getButtonState();
 
   return (
-    <div className="max-w-2xl mx-auto space-y-4 md:space-y-6">
+    <div className="max-w-2xl mx-auto space-y-4 md:space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-700">
       {/* Header with branding */}
       <div className="flex items-center justify-center gap-3">
         <Image
@@ -1043,10 +1140,17 @@ export default function PronunciationPracticeSimple() {
                   size="sm"
                   onClick={() => setShowPhraseSetMenu(!showPhraseSetMenu)}
                   className="w-full flex items-center justify-center gap-2 bg-white/90 hover:bg-white text-foreground border-[#10B981]/30"
+                  disabled={isLoadingPhraseSets}
                 >
-                  <Filter className="h-4 w-4" />
+                  {isLoadingPhraseSets ? (
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                  ) : (
+                    <Filter className="h-4 w-4" />
+                  )}
                   <span>
-                    {phraseSetFilter === "all"
+                    {isLoadingPhraseSets
+                      ? "Loading sets..."
+                      : phraseSetFilter === "all"
                       ? "All Sets"
                       : phraseSetFilter.charAt(0).toUpperCase() +
                         phraseSetFilter.slice(1).replace("-", " ")}
