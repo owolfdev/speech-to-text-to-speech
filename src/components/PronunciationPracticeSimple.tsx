@@ -1306,12 +1306,12 @@ export default function PronunciationPracticeSimple() {
               variant="outline"
               onClick={moveToPreviousPhrase}
               disabled={appState === "recording" || appState === "processing"}
-              className={`md:w-32 h-12 md:h-14 text-base md:text-lg font-semibold border-2 border-[#5BA3E8] text-[#5BA3E8] hover:bg-[#5BA3E8]/10 bg-transparent transition-all duration-150 ${
+              className={`w-12 md:w-32 h-12 md:h-14 text-base md:text-lg font-semibold border-2 border-[#5BA3E8] text-[#5BA3E8] hover:bg-[#5BA3E8]/10 bg-transparent transition-all duration-150 ${
                 backButtonPressed ? "scale-95" : "scale-100 hover:scale-105"
               }`}
             >
-              <ChevronLeft className="w-4 md:w-5 h-4 md:h-5 mr-2" />
-              Back
+              <ChevronLeft className="w-4 md:w-5 h-4 md:h-5 md:mr-2" />
+              <span className="hidden md:inline">Back</span>
             </Button>
 
             <Button
@@ -1319,12 +1319,14 @@ export default function PronunciationPracticeSimple() {
               variant="outline"
               onClick={handleNextPhrase}
               disabled={appState === "recording" || appState === "processing"}
-              className={`md:w-32 h-12 md:h-14 text-base md:text-lg font-semibold border-2 border-[#5BA3E8] text-[#5BA3E8] hover:bg-[#5BA3E8]/10 bg-transparent transition-all duration-150 ${
+              className={`w-12 md:w-32 h-12 md:h-14 text-base md:text-lg font-semibold border-2 border-[#5BA3E8] text-[#5BA3E8] hover:bg-[#5BA3E8]/10 bg-transparent transition-all duration-150 ${
                 nextButtonPressed ? "scale-95" : "scale-100 hover:scale-105"
               }`}
             >
-              <SkipForward className="w-4 md:w-5 h-4 md:h-5 mr-2" />
-              {showCelebration ? "Next" : "Skip"}
+              <SkipForward className="w-4 md:w-5 h-4 md:h-5 md:mr-2" />
+              <span className="hidden md:inline">
+                {showCelebration ? "Next" : "Skip"}
+              </span>
             </Button>
           </div>
         )}
