@@ -1152,7 +1152,7 @@ export default function PronunciationPracticeSimple() {
             <div
               className={`p-4 md:p-6 rounded-xl border-2 ${
                 showCelebration
-                  ? "bg-[#5BA3E8]/10 border-[#5BA3E8] animate-in fade-in slide-in-from-bottom-4"
+                  ? "bg-green-50 dark:bg-green-900/20 border-green-200 dark:border-green-800 animate-in fade-in slide-in-from-bottom-4"
                   : lastResult?.success
                   ? "bg-green-50 dark:bg-green-900/20 border-green-200 dark:border-green-800"
                   : "bg-yellow-50 dark:bg-yellow-900/20 border-yellow-200 dark:border-yellow-800"
@@ -1161,7 +1161,7 @@ export default function PronunciationPracticeSimple() {
               <div className="text-center space-y-2">
                 {showCelebration ? (
                   <>
-                    <p className="text-xl md:text-2xl font-bold text-[#5BA3E8]">
+                    <p className="text-xl md:text-2xl font-bold text-green-700 dark:text-green-300">
                       🎉 Phrase Mastered!
                     </p>
                     <p className="text-sm md:text-base text-muted-foreground">
