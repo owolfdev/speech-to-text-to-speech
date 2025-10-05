@@ -15,6 +15,7 @@ import {
   Mic,
   MicOff,
   SkipForward,
+  ChevronLeft,
   Check,
   Circle,
   Smile,
@@ -89,8 +90,10 @@ export default function PronunciationPracticeSimple() {
   // SIMPLE STATE MACHINE
   const [appState, setAppState] = useState<AppState>("idle");
 
-  // Button animation state
-  const [buttonPressed, setButtonPressed] = useState(false);
+  // Button animation states
+  const [recordButtonPressed, setRecordButtonPressed] = useState(false);
+  const [backButtonPressed, setBackButtonPressed] = useState(false);
+  const [nextButtonPressed, setNextButtonPressed] = useState(false);
 
   // Ref to track previous phrase for filter changes
   const previousPhraseRef = useRef<FrenchPhrase | null>(null);
@@ -401,7 +404,7 @@ export default function PronunciationPracticeSimple() {
 
   // Handle phrase navigation
   const handleNextPhrase = () => {
-    handleButtonPress(); // Trigger animation
+    handleNextButtonPress(); // Trigger animation
 
     // Reset everything for new phrase
     setAppState("idle");
@@ -419,17 +422,47 @@ export default function PronunciationPracticeSimple() {
     resetRecording();
   };
 
-  // Button press animation handler
-  const handleButtonPress = () => {
-    setButtonPressed(true);
-    setTimeout(() => setButtonPressed(false), 150);
+  // Function to move to previous phrase
+  const moveToPreviousPhrase = () => {
+    handleBackButtonPress(); // Trigger animation
+
+    setShowCelebration(false);
+    setLastResult(null);
+    setSuccessfulReps(0);
+    setShowTranslation(false);
+
+    // Move to previous phrase in filtered list
+    const prevIndex =
+      currentFilteredIndex === 0
+        ? filteredPhrases.length - 1
+        : currentFilteredIndex - 1;
+    setCurrentFilteredIndex(prevIndex);
+    setCurrentPhraseIndex(prevIndex + 1);
+    setCurrentPhrase(filteredPhrases[prevIndex]);
+
+    resetRecording();
+  };
+
+  // Button press animation handlers
+  const handleRecordButtonPress = () => {
+    setRecordButtonPressed(true);
+    setTimeout(() => setRecordButtonPressed(false), 150);
+  };
+
+  const handleBackButtonPress = () => {
+    setBackButtonPressed(true);
+    setTimeout(() => setBackButtonPressed(false), 150);
+  };
+
+  const handleNextButtonPress = () => {
+    setNextButtonPressed(true);
+    setTimeout(() => setNextButtonPressed(false), 150);
   };
 
   // SIMPLE RECORDING START
   const handleStartRecording = async (): Promise<void> => {
     try {
       console.log("🎤 Starting recording...");
-      handleButtonPress(); // Trigger animation
 
       // Clear any previous state
       setPermissionError(null);
@@ -482,7 +515,6 @@ export default function PronunciationPracticeSimple() {
   // SIMPLE RECORDING STOP + AUTO PROCESS
   const handleStopRecording = async () => {
     console.log("🛑 Stopping recording...");
-    handleButtonPress(); // Trigger animation
 
     // Stop recording
     stopRecording();
@@ -781,7 +813,10 @@ export default function PronunciationPracticeSimple() {
           text: "Record",
           icon: <Mic className="w-4 md:w-5 h-4 md:h-5 mr-2" />,
           disabled: false,
-          onClick: handleStartRecording,
+          onClick: () => {
+            handleRecordButtonPress();
+            handleStartRecording();
+          },
           className: "bg-[#5BA3E8] hover:bg-[#5BA3E8]/90 text-white",
         };
       case "recording":
@@ -789,7 +824,10 @@ export default function PronunciationPracticeSimple() {
           text: "Stop Recording",
           icon: <MicOff className="w-4 md:w-5 h-4 md:h-5 mr-2" />,
           disabled: false,
-          onClick: handleStopRecording,
+          onClick: () => {
+            handleRecordButtonPress();
+            handleStopRecording();
+          },
           className: "bg-destructive hover:bg-destructive/90",
         };
       case "processing":
@@ -1256,7 +1294,7 @@ export default function PronunciationPracticeSimple() {
               onClick={buttonState.onClick}
               disabled={buttonState.disabled}
               className={`flex-1 md:w-40 h-12 md:h-14 text-base md:text-lg font-semibold transition-all duration-150 ${
-                buttonPressed ? "scale-95" : "scale-100 hover:scale-105"
+                recordButtonPressed ? "scale-95" : "scale-100 hover:scale-105"
               } ${buttonState.className}`}
             >
               {buttonState.icon}
@@ -1266,10 +1304,23 @@ export default function PronunciationPracticeSimple() {
             <Button
               size="lg"
               variant="outline"
+              onClick={moveToPreviousPhrase}
+              disabled={appState === "recording" || appState === "processing"}
+              className={`md:w-32 h-12 md:h-14 text-base md:text-lg font-semibold border-2 border-[#5BA3E8] text-[#5BA3E8] hover:bg-[#5BA3E8]/10 bg-transparent transition-all duration-150 ${
+                backButtonPressed ? "scale-95" : "scale-100 hover:scale-105"
+              }`}
+            >
+              <ChevronLeft className="w-4 md:w-5 h-4 md:h-5 mr-2" />
+              Back
+            </Button>
+
+            <Button
+              size="lg"
+              variant="outline"
               onClick={handleNextPhrase}
               disabled={appState === "recording" || appState === "processing"}
-              className={`flex-1 md:w-40 h-12 md:h-14 text-base md:text-lg font-semibold border-2 border-[#5BA3E8] text-[#5BA3E8] hover:bg-[#5BA3E8]/10 bg-transparent transition-all duration-150 ${
-                buttonPressed ? "scale-95" : "scale-100 hover:scale-105"
+              className={`md:w-32 h-12 md:h-14 text-base md:text-lg font-semibold border-2 border-[#5BA3E8] text-[#5BA3E8] hover:bg-[#5BA3E8]/10 bg-transparent transition-all duration-150 ${
+                nextButtonPressed ? "scale-95" : "scale-100 hover:scale-105"
               }`}
             >
               <SkipForward className="w-4 md:w-5 h-4 md:h-5 mr-2" />
