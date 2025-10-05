@@ -331,28 +331,58 @@ export default function PronunciationPracticeSimple() {
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, [showDifficultyMenu, showCategoryMenu, showPhraseSetMenu]);
 
-  // Get count for each difficulty level (always shows total count, not filtered count)
+  // Get count for each difficulty level (respects current filters)
   const getDifficultyCount = (difficulty: string) => {
+    let phrases = allPhrases;
+
+    // Apply current filters except difficulty
+    if (phraseSetFilter !== "all") {
+      phrases = phrases.filter((p) => p.phrase_set === phraseSetFilter);
+    }
+    if (categoryFilter !== "all") {
+      phrases = phrases.filter((p) => p.category === categoryFilter);
+    }
+
     if (difficulty === "all") {
-      return allPhrases.length;
+      return phrases.length;
     }
-    return allPhrases.filter((p) => p.difficulty === difficulty).length;
+    return phrases.filter((p) => p.difficulty === difficulty).length;
   };
 
-  // Get count for each category (always shows total count, not filtered count)
+  // Get count for each category (respects current filters)
   const getCategoryCount = (category: string) => {
-    if (category === "all") {
-      return allPhrases.length;
+    let phrases = allPhrases;
+
+    // Apply current filters except category
+    if (difficultyFilter !== "all") {
+      phrases = phrases.filter((p) => p.difficulty === difficultyFilter);
     }
-    return allPhrases.filter((p) => p.category === category).length;
+    if (phraseSetFilter !== "all") {
+      phrases = phrases.filter((p) => p.phrase_set === phraseSetFilter);
+    }
+
+    if (category === "all") {
+      return phrases.length;
+    }
+    return phrases.filter((p) => p.category === category).length;
   };
 
-  // Get count for each phrase set (always shows total count, not filtered count)
+  // Get count for each phrase set (respects current filters)
   const getPhraseSetCount = (phraseSet: string) => {
-    if (phraseSet === "all") {
-      return allPhrases.length;
+    let phrases = allPhrases;
+
+    // Apply current filters except phrase set
+    if (difficultyFilter !== "all") {
+      phrases = phrases.filter((p) => p.difficulty === difficultyFilter);
     }
-    return allPhrases.filter((p) => p.phrase_set === phraseSet).length;
+    if (categoryFilter !== "all") {
+      phrases = phrases.filter((p) => p.category === categoryFilter);
+    }
+
+    if (phraseSet === "all") {
+      return phrases.length;
+    }
+    return phrases.filter((p) => p.phrase_set === phraseSet).length;
   };
 
   // Get unique categories from all phrases
@@ -1006,70 +1036,6 @@ export default function PronunciationPracticeSimple() {
         <div className="space-y-4">
           <div className="w-full">
             <div className="flex flex-row gap-2 w-full">
-              {/* Difficulty Filter Menu */}
-              <div className="relative flex-1" data-difficulty-menu>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => setShowDifficultyMenu(!showDifficultyMenu)}
-                  className="w-full flex items-center justify-center gap-2 bg-white/90 hover:bg-white text-foreground border-[#5BA3E8]/30"
-                >
-                  <Filter className="h-4 w-4" />
-                  <span>
-                    {difficultyFilter === "all"
-                      ? "All Levels"
-                      : difficultyFilter.charAt(0).toUpperCase() +
-                        difficultyFilter.slice(1)}
-                  </span>
-                  <ChevronDown className="h-4 w-4" />
-                </Button>
-
-                {showDifficultyMenu && (
-                  <div className="absolute left-0 right-0 top-full mt-1 bg-white rounded-lg shadow-lg border border-gray-200 z-50">
-                    <div className="py-1">
-                      {[
-                        {
-                          value: "all",
-                          label: "All Levels",
-                          count: totalPhraseCount,
-                        },
-                        { value: "beginner", label: "Beginner", count: 0 },
-                        {
-                          value: "intermediate",
-                          label: "Intermediate",
-                          count: 0,
-                        },
-                        { value: "advanced", label: "Advanced", count: 0 },
-                      ].map((option) => (
-                        <button
-                          key={option.value}
-                          onClick={() => {
-                            setDifficultyFilter(
-                              option.value as
-                                | "all"
-                                | "beginner"
-                                | "intermediate"
-                                | "advanced"
-                            );
-                            setShowDifficultyMenu(false);
-                          }}
-                          className={`w-full text-left px-4 py-2 text-sm hover:bg-gray-100 flex items-center justify-between ${
-                            difficultyFilter === option.value
-                              ? "bg-[#5BA3E8]/10 text-[#5BA3E8]"
-                              : "text-gray-700"
-                          }`}
-                        >
-                          <span>{option.label}</span>
-                          <span className="text-xs text-gray-500">
-                            {getDifficultyCount(option.value)}
-                          </span>
-                        </button>
-                      ))}
-                    </div>
-                  </div>
-                )}
-              </div>
-
               {/* Phrase Set Filter Menu */}
               <div className="relative flex-1" data-phrase-set-menu>
                 <Button
@@ -1129,6 +1095,70 @@ export default function PronunciationPracticeSimple() {
                           </span>
                           <span className="text-xs text-gray-500">
                             {getPhraseSetCount(phraseSet)}
+                          </span>
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              {/* Difficulty Filter Menu */}
+              <div className="relative flex-1" data-difficulty-menu>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setShowDifficultyMenu(!showDifficultyMenu)}
+                  className="w-full flex items-center justify-center gap-2 bg-white/90 hover:bg-white text-foreground border-[#5BA3E8]/30"
+                >
+                  <Filter className="h-4 w-4" />
+                  <span>
+                    {difficultyFilter === "all"
+                      ? "All Levels"
+                      : difficultyFilter.charAt(0).toUpperCase() +
+                        difficultyFilter.slice(1)}
+                  </span>
+                  <ChevronDown className="h-4 w-4" />
+                </Button>
+
+                {showDifficultyMenu && (
+                  <div className="absolute left-0 right-0 top-full mt-1 bg-white rounded-lg shadow-lg border border-gray-200 z-50">
+                    <div className="py-1">
+                      {[
+                        {
+                          value: "all",
+                          label: "All Levels",
+                          count: totalPhraseCount,
+                        },
+                        { value: "beginner", label: "Beginner", count: 0 },
+                        {
+                          value: "intermediate",
+                          label: "Intermediate",
+                          count: 0,
+                        },
+                        { value: "advanced", label: "Advanced", count: 0 },
+                      ].map((option) => (
+                        <button
+                          key={option.value}
+                          onClick={() => {
+                            setDifficultyFilter(
+                              option.value as
+                                | "all"
+                                | "beginner"
+                                | "intermediate"
+                                | "advanced"
+                            );
+                            setShowDifficultyMenu(false);
+                          }}
+                          className={`w-full text-left px-4 py-2 text-sm hover:bg-gray-100 flex items-center justify-between ${
+                            difficultyFilter === option.value
+                              ? "bg-[#5BA3E8]/10 text-[#5BA3E8]"
+                              : "text-gray-700"
+                          }`}
+                        >
+                          <span>{option.label}</span>
+                          <span className="text-xs text-gray-500">
+                            {getDifficultyCount(option.value)}
                           </span>
                         </button>
                       ))}
