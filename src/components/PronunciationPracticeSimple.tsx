@@ -102,6 +102,37 @@ export default function PronunciationPracticeSimple() {
     preInitialize,
   } = useAudioRecorder();
 
+  // Load filter settings from localStorage on mount
+  useEffect(() => {
+    const savedDifficulty = localStorage.getItem(
+      "pronunciation-difficulty-filter"
+    );
+    const savedCategory = localStorage.getItem("pronunciation-category-filter");
+
+    if (
+      savedDifficulty &&
+      ["all", "beginner", "intermediate", "advanced"].includes(savedDifficulty)
+    ) {
+      setDifficultyFilter(
+        savedDifficulty as "all" | "beginner" | "intermediate" | "advanced"
+      );
+    }
+
+    if (savedCategory) {
+      setCategoryFilter(savedCategory);
+    }
+  }, []);
+
+  // Save difficulty filter to localStorage when it changes
+  useEffect(() => {
+    localStorage.setItem("pronunciation-difficulty-filter", difficultyFilter);
+  }, [difficultyFilter]);
+
+  // Save category filter to localStorage when it changes
+  useEffect(() => {
+    localStorage.setItem("pronunciation-category-filter", categoryFilter);
+  }, [categoryFilter]);
+
   // Load all phrases on component mount
   useEffect(() => {
     const loadAllPhrases = async () => {
