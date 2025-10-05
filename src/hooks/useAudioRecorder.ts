@@ -176,12 +176,6 @@ export function useAudioRecorder() {
         intervalRef.current = setInterval(() => {
           setState((prev) => {
             const newTime = prev.recordingTime + 1;
-            // Warning threshold: 30% of total time remaining, minimum 2 seconds, maximum 10 seconds
-            const warningThreshold = Math.max(
-              2,
-              Math.min(10, Math.ceil(recordingMaxTime * 0.3))
-            );
-            const isNearLimit = newTime >= recordingMaxTime - warningThreshold;
 
             // Auto-stop if time limit reached
             if (newTime >= recordingMaxTime) {
@@ -195,7 +189,7 @@ export function useAudioRecorder() {
             return {
               ...prev,
               recordingTime: newTime,
-              isNearLimit,
+              isNearLimit: false, // Always stay green
             };
           });
         }, 1000);
