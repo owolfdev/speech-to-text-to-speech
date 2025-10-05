@@ -57,9 +57,6 @@ export default function RecordingStatus({
     }
 
     if (isRecording) {
-      const timeRemaining = maxRecordingTime - recordingTime;
-      const isUrgent = timeRemaining <= 5;
-
       return {
         icon: <Mic className="w-6 h-6 text-green-500 animate-pulse" />,
         title: (
@@ -67,12 +64,9 @@ export default function RecordingStatus({
             Recording... {formatTime(recordingTime)}
           </span>
         ),
-        message: isUrgent
-          ? `⚠️ Recording will stop in ${timeRemaining} seconds!`
-          : "Speak clearly into your microphone",
-        className: isUrgent
-          ? "bg-orange-50 dark:bg-orange-900/20 border-orange-300 dark:border-orange-700"
-          : "bg-green-50 dark:bg-green-900/20 border-green-200 dark:border-green-800",
+        message: "Speak clearly into your microphone",
+        className:
+          "bg-green-50 dark:bg-green-900/20 border-green-200 dark:border-green-800",
       };
     }
 
@@ -111,9 +105,7 @@ export default function RecordingStatus({
             {/* Progress bar */}
             <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2">
               <div
-                className={`h-2 rounded-full transition-all duration-300 ${
-                  isNearLimit ? "bg-orange-500" : "bg-green-500"
-                }`}
+                className="h-2 rounded-full transition-all duration-300 bg-green-500"
                 style={{
                   width: `${Math.min(
                     (recordingTime / maxRecordingTime) * 100,
@@ -124,9 +116,7 @@ export default function RecordingStatus({
             </div>
 
             <p className="text-xs text-muted-foreground">
-              {isNearLimit
-                ? "Recording will stop automatically soon"
-                : 'Click "Stop Recording" when you\'re finished'}
+              Click &quot;Stop Recording&quot; when you&apos;re finished
             </p>
           </div>
         )}
