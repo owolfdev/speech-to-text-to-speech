@@ -122,16 +122,14 @@ export default function TTSAudioPlayer({
         size="icon"
         onClick={handlePlay}
         disabled={disabled || isLoading || !text}
-        className={`h-8 w-8 rounded-full hover:bg-[#5BA3E8]/10 ${className}`}
+        className={`h-14 w-14 md:h-12 md:w-12 rounded-full hover:bg-[#5BA3E8]/10 [&>svg]:!w-6 [&>svg]:!h-6 [&>svg]:!max-w-none [&>svg]:!max-h-none ${className}`}
         title="Listen to pronunciation"
       >
         {isLoading ? (
-          <Loader2 className="w-4 h-4 text-[#5BA3E8] animate-spin" />
+          <Loader2 className="text-[#5BA3E8] animate-spin" />
         ) : (
           <Volume2
-            className={`w-4 h-4 text-[#5BA3E8] ${
-              isPlaying ? "animate-pulse" : ""
-            }`}
+            className={`text-[#5BA3E8] ${isPlaying ? "animate-pulse" : ""}`}
           />
         )}
       </Button>
