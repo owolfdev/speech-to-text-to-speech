@@ -31,6 +31,7 @@ export interface FrenchPhrase {
   verb_conjugation: string | null;
   difficulty_score: number;
   frequency_score: number;
+  phrase_set: string;
   is_active: boolean;
   created_at: string;
   updated_at: string;
@@ -106,11 +107,13 @@ export async function getPhrasesByCategory(
 
 export async function getRandomPhrase(
   difficulty?: "beginner" | "intermediate" | "advanced",
-  category?: string
+  category?: string,
+  phraseSet?: string
 ): Promise<FrenchPhrase> {
   const { data, error } = await supabase.rpc("language_app_get_random_phrase", {
     difficulty_filter: difficulty || null,
     category_filter: category || null,
+    phrase_set_filter: phraseSet || null,
     limit_count: 1,
   });
 
@@ -154,6 +157,62 @@ export async function getDifficultyLevels(): Promise<DifficultyLevel[]> {
   return data || [];
 }
 
+// New functions for phrase set filtering
+export async function getPhrasesBySet(
+  phraseSet: string
+): Promise<FrenchPhrase[]> {
+  const { data, error } = await supabase
+    .from("language_app_phrases_with_details")
+    .select("*")
+    .eq("phrase_set", phraseSet)
+    .eq("is_active", true)
+    .order("difficulty_level", { ascending: true })
+    .order("frequency_score", { ascending: false });
+
+  if (error) {
+    console.error("Error fetching phrases by set:", error);
+    throw new Error("Failed to fetch phrases by set");
+  }
+
+  return data || [];
+}
+
+export async function getPhrasesByDifficultyAndSet(
+  difficulty: "beginner" | "intermediate" | "advanced",
+  phraseSet: string
+): Promise<FrenchPhrase[]> {
+  const { data, error } = await supabase
+    .from("language_app_phrases_with_details")
+    .select("*")
+    .eq("difficulty", difficulty)
+    .eq("phrase_set", phraseSet)
+    .eq("is_active", true)
+    .order("frequency_score", { ascending: false });
+
+  if (error) {
+    console.error("Error fetching phrases by difficulty and set:", error);
+    throw new Error("Failed to fetch phrases by difficulty and set");
+  }
+
+  return data || [];
+}
+
+export async function getAvailablePhraseSets(): Promise<string[]> {
+  const { data, error } = await supabase
+    .from("language_app_phrases_with_details")
+    .select("phrase_set")
+    .eq("is_active", true);
+
+  if (error) {
+    console.error("Error fetching phrase sets:", error);
+    throw new Error("Failed to fetch phrase sets");
+  }
+
+  // Extract unique phrase sets
+  const phraseSets = [...new Set(data?.map((item) => item.phrase_set) || [])];
+  return phraseSets.sort();
+}
+
 // Utility function to convert new format to legacy format for backward compatibility
 export function toLegacyFormat(phrase: FrenchPhrase): LegacyFrenchPhrase {
   return {
@@ -184,7 +243,8 @@ export async function getCachedPhrases(): Promise<FrenchPhrase[]> {
 
 export async function getCachedRandomPhrase(
   difficulty?: "beginner" | "intermediate" | "advanced",
-  category?: string
+  category?: string,
+  phraseSet?: string
 ): Promise<FrenchPhrase> {
   const phrases = await getCachedPhrases();
 
@@ -198,6 +258,10 @@ export async function getCachedRandomPhrase(
 
   if (category) {
     filteredPhrases = filteredPhrases.filter((p) => p.category === category);
+  }
+
+  if (phraseSet) {
+    filteredPhrases = filteredPhrases.filter((p) => p.phrase_set === phraseSet);
   }
 
   if (filteredPhrases.length === 0) {

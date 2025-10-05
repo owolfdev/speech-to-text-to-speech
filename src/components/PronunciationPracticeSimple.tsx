@@ -30,7 +30,11 @@ import {
 } from "lucide-react";
 import Image from "next/image";
 import { useAudioRecorder } from "@/hooks/useAudioRecorder";
-import { getAllPhrases, type FrenchPhrase } from "@/lib/phrases";
+import {
+  getAllPhrases,
+  getAvailablePhraseSets,
+  type FrenchPhrase,
+} from "@/lib/phrases";
 import { getPronunciationFeedback } from "@/lib/text-comparison";
 import TTSAudioPlayer from "@/components/TTSAudioPlayer";
 import RecordingStatus from "@/components/RecordingStatus";
@@ -60,9 +64,14 @@ export default function PronunciationPracticeSimple() {
   const [currentFilteredIndex, setCurrentFilteredIndex] = useState(0);
   const [showDifficultyMenu, setShowDifficultyMenu] = useState(false);
 
-  // Category filter state
+  // Category filter state (hidden for now)
   const [categoryFilter, setCategoryFilter] = useState<string>("all");
   const [showCategoryMenu, setShowCategoryMenu] = useState(false);
+
+  // Phrase set filter state
+  const [phraseSetFilter, setPhraseSetFilter] = useState<string>("all");
+  const [showPhraseSetMenu, setShowPhraseSetMenu] = useState(false);
+  const [availablePhraseSets, setAvailablePhraseSets] = useState<string[]>([]);
 
   // Simple feedback state
   const [lastResult, setLastResult] = useState<{
@@ -108,6 +117,9 @@ export default function PronunciationPracticeSimple() {
       "pronunciation-difficulty-filter"
     );
     const savedCategory = localStorage.getItem("pronunciation-category-filter");
+    const savedPhraseSet = localStorage.getItem(
+      "pronunciation-phrase-set-filter"
+    );
     const savedPhraseId = localStorage.getItem(
       "pronunciation-current-phrase-id"
     );
@@ -128,6 +140,10 @@ export default function PronunciationPracticeSimple() {
       setCategoryFilter(savedCategory);
     }
 
+    if (savedPhraseSet) {
+      setPhraseSetFilter(savedPhraseSet);
+    }
+
     // Store the saved phrase info to restore after phrases are loaded
     if (savedPhraseId && savedPhraseIndex) {
       setCurrentPhraseIndex(parseInt(savedPhraseIndex, 10));
@@ -144,6 +160,11 @@ export default function PronunciationPracticeSimple() {
   useEffect(() => {
     localStorage.setItem("pronunciation-category-filter", categoryFilter);
   }, [categoryFilter]);
+
+  // Save phrase set filter to localStorage when it changes
+  useEffect(() => {
+    localStorage.setItem("pronunciation-phrase-set-filter", phraseSetFilter);
+  }, [phraseSetFilter]);
 
   // Save current phrase to localStorage when it changes
   useEffect(() => {
@@ -193,9 +214,14 @@ export default function PronunciationPracticeSimple() {
           phrases = phrases.filter((p) => p.difficulty === difficultyFilter);
         }
 
-        // Apply category filter
+        // Apply category filter (hidden for now)
         if (categoryFilter !== "all") {
           phrases = phrases.filter((p) => p.category === categoryFilter);
+        }
+
+        // Apply phrase set filter
+        if (phraseSetFilter !== "all") {
+          phrases = phrases.filter((p) => p.phrase_set === phraseSetFilter);
         }
 
         setFilteredPhrases(phrases);
@@ -252,14 +278,30 @@ export default function PronunciationPracticeSimple() {
     if (allPhrases.length > 0) {
       loadPhrases();
     }
-  }, [difficultyFilter, categoryFilter, allPhrases]);
+  }, [difficultyFilter, categoryFilter, phraseSetFilter, allPhrases]);
 
   // Update ref when current phrase changes
   useEffect(() => {
     previousPhraseRef.current = currentPhrase;
   }, [currentPhrase]);
 
-  // Close difficulty menu when clicking outside
+  // Load available phrase sets
+  useEffect(() => {
+    const loadPhraseSets = async () => {
+      try {
+        const phraseSets = await getAvailablePhraseSets();
+        setAvailablePhraseSets(phraseSets);
+      } catch (error) {
+        console.error("Error loading phrase sets:", error);
+      }
+    };
+
+    if (allPhrases.length > 0) {
+      loadPhraseSets();
+    }
+  }, [allPhrases]);
+
+  // Close filter menus when clicking outside
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
       if (showDifficultyMenu) {
@@ -274,11 +316,17 @@ export default function PronunciationPracticeSimple() {
           setShowCategoryMenu(false);
         }
       }
+      if (showPhraseSetMenu) {
+        const target = event.target as Element;
+        if (!target.closest("[data-phrase-set-menu]")) {
+          setShowPhraseSetMenu(false);
+        }
+      }
     };
 
     document.addEventListener("mousedown", handleClickOutside);
     return () => document.removeEventListener("mousedown", handleClickOutside);
-  }, [showDifficultyMenu, showCategoryMenu]);
+  }, [showDifficultyMenu, showCategoryMenu, showPhraseSetMenu]);
 
   // Get count for each difficulty level (always shows total count, not filtered count)
   const getDifficultyCount = (difficulty: string) => {
@@ -294,6 +342,14 @@ export default function PronunciationPracticeSimple() {
       return allPhrases.length;
     }
     return allPhrases.filter((p) => p.category === category).length;
+  };
+
+  // Get count for each phrase set (always shows total count, not filtered count)
+  const getPhraseSetCount = (phraseSet: string) => {
+    if (phraseSet === "all") {
+      return allPhrases.length;
+    }
+    return allPhrases.filter((p) => p.phrase_set === phraseSet).length;
   };
 
   // Get unique categories from all phrases
@@ -976,43 +1032,65 @@ export default function PronunciationPracticeSimple() {
                 )}
               </div>
 
-              {/* Category Filter Menu */}
-              <div className="relative flex-1" data-category-menu>
+              {/* Phrase Set Filter Menu */}
+              <div className="relative flex-1" data-phrase-set-menu>
                 <Button
                   variant="outline"
                   size="sm"
-                  onClick={() => setShowCategoryMenu(!showCategoryMenu)}
+                  onClick={() => setShowPhraseSetMenu(!showPhraseSetMenu)}
                   className="w-full flex items-center justify-center gap-2 bg-white/90 hover:bg-white text-foreground border-[#10B981]/30"
                 >
                   <Filter className="h-4 w-4" />
                   <span>
-                    {categoryFilter === "all"
-                      ? "All Categories"
-                      : categoryFilter.charAt(0).toUpperCase() +
-                        categoryFilter.slice(1).replace("_", " ")}
+                    {phraseSetFilter === "all"
+                      ? "All Sets"
+                      : phraseSetFilter.charAt(0).toUpperCase() +
+                        phraseSetFilter.slice(1).replace("-", " ")}
                   </span>
                   <ChevronDown className="h-4 w-4" />
                 </Button>
 
-                {showCategoryMenu && (
+                {showPhraseSetMenu && (
                   <div className="absolute left-0 right-0 top-full mt-1 bg-white rounded-lg shadow-lg border border-gray-200 z-50 max-h-64 overflow-y-auto">
                     <div className="py-1">
-                      {getUniqueCategories().map((option) => (
+                      {/* All Sets option */}
+                      <button
+                        onClick={() => {
+                          setPhraseSetFilter("all");
+                          setShowPhraseSetMenu(false);
+                        }}
+                        className={`w-full text-left px-4 py-2 text-sm hover:bg-gray-100 flex items-center justify-between ${
+                          phraseSetFilter === "all"
+                            ? "bg-[#10B981]/10 text-[#10B981]"
+                            : "text-gray-700"
+                        }`}
+                      >
+                        <span>All Sets</span>
+                        <span className="text-xs text-gray-500">
+                          {getPhraseSetCount("all")}
+                        </span>
+                      </button>
+
+                      {/* Available phrase sets */}
+                      {availablePhraseSets.map((phraseSet) => (
                         <button
-                          key={option.value}
+                          key={phraseSet}
                           onClick={() => {
-                            setCategoryFilter(option.value);
-                            setShowCategoryMenu(false);
+                            setPhraseSetFilter(phraseSet);
+                            setShowPhraseSetMenu(false);
                           }}
                           className={`w-full text-left px-4 py-2 text-sm hover:bg-gray-100 flex items-center justify-between ${
-                            categoryFilter === option.value
+                            phraseSetFilter === phraseSet
                               ? "bg-[#10B981]/10 text-[#10B981]"
                               : "text-gray-700"
                           }`}
                         >
-                          <span>{option.label}</span>
+                          <span>
+                            {phraseSet.charAt(0).toUpperCase() +
+                              phraseSet.slice(1).replace("-", " ")}
+                          </span>
                           <span className="text-xs text-gray-500">
-                            {option.count}
+                            {getPhraseSetCount(phraseSet)}
                           </span>
                         </button>
                       ))}
