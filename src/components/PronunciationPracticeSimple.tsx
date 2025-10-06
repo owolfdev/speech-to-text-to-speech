@@ -1337,6 +1337,20 @@ export default function PronunciationPracticeSimple() {
                   </p>
                 </div>
 
+                {/* Usage Notes (Attribution) */}
+                {currentPhrase.usage_notes && (
+                  <div className="p-3 md:p-4 bg-green-50/80 rounded-xl border-2 border-green-200/30 animate-in fade-in slide-in-from-top-2">
+                    <div>
+                      <h4 className="text-lg font-semibold text-green-800 mb-2">
+                        Context & Attribution:
+                      </h4>
+                      <p className="text-lg text-green-700">
+                        {currentPhrase.usage_notes}
+                      </p>
+                    </div>
+                  </div>
+                )}
+
                 {/* Grammar explanation */}
                 {(currentPhrase.grammar_notes ||
                   currentPhrase.verb_conjugation) && (
