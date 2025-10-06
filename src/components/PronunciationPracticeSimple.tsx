@@ -29,17 +29,26 @@ import {
   Filter,
   ChevronDown,
   Loader2,
+  Sparkles,
+  Trash2,
 } from "lucide-react";
 import Image from "next/image";
 import { useAudioRecorder } from "@/hooks/useAudioRecorder";
 import {
-  getAllPhrases,
+  getCachedPhrases,
   getAvailablePhraseSets,
+  invalidatePhraseCache,
   type FrenchPhrase,
 } from "@/lib/phrases";
 import { getPronunciationFeedback } from "@/lib/text-comparison";
 import TTSAudioPlayer from "@/components/TTSAudioPlayer";
 import RecordingStatus from "@/components/RecordingStatus";
+import PhraseGenerator from "@/components/PhraseGenerator";
+import {
+  saveGeneratedPhrases,
+  deleteLocalPhraseSet,
+  getLocalPhraseSetInfo,
+} from "@/lib/local-phrases";
 
 // SIMPLE STATE MACHINE
 type AppState = "idle" | "recording" | "processing";
@@ -94,6 +103,16 @@ export default function PronunciationPracticeSimple() {
 
   // SIMPLE STATE MACHINE
   const [appState, setAppState] = useState<AppState>("idle");
+
+  // Phrase generator state
+  const [showPhraseGenerator, setShowPhraseGenerator] = useState(false);
+
+  // Delete confirmation state
+  const [deleteConfirm, setDeleteConfirm] = useState<{
+    show: boolean;
+    phraseSetId: string;
+    phraseSetName: string;
+  }>({ show: false, phraseSetId: "", phraseSetName: "" });
 
   // Button animation states
   const [recordButtonPressed, setRecordButtonPressed] = useState(false);
@@ -190,7 +209,7 @@ export default function PronunciationPracticeSimple() {
     const loadAllPhrases = async () => {
       try {
         setIsLoadingPhrases(true);
-        const phrases = await getAllPhrases();
+        const phrases = await getCachedPhrases();
         setAllPhrases(phrases);
       } catch (error) {
         console.error("Error loading all phrases:", error);
@@ -712,6 +731,93 @@ export default function PronunciationPracticeSimple() {
     ]
   );
 
+  // Handle phrase generation
+  const handlePhrasesGenerated = useCallback(
+    async (phrases: FrenchPhrase[], phraseSet: string) => {
+      try {
+        // Save to local storage
+        saveGeneratedPhrases(
+          phrases,
+          phraseSet,
+          phraseSet.replace("generated-", "").replace(/-/g, " ")
+        );
+
+        // Invalidate cache to force reload with new phrases
+        invalidatePhraseCache();
+
+        // Refresh phrase sets and phrases
+        const updatedPhraseSets = await getAvailablePhraseSets();
+        setAvailablePhraseSets(updatedPhraseSets);
+
+        // Reload all phrases to include the new ones (using cached version to get local phrases)
+        const allPhrases = await getCachedPhrases();
+        setAllPhrases(allPhrases);
+
+        // Switch to the new phrase set
+        setPhraseSetFilter(phraseSet);
+
+        // Close the generator
+        setShowPhraseGenerator(false);
+
+        // Show success message
+        setLastResult({
+          success: true,
+          message: `AI generated ${phrases.length} phrases about "${phraseSet
+            .replace("generated-", "")
+            .replace(/-/g, " ")}"!`,
+        });
+      } catch (error) {
+        console.error("Error handling generated phrases:", error);
+        setLastResult({
+          success: false,
+          message: "Failed to save generated phrases. Please try again.",
+        });
+      }
+    },
+    []
+  );
+
+  // Handle phrase set deletion
+  const handleDeletePhraseSet = useCallback(
+    async (phraseSetId: string) => {
+      try {
+        // Delete from local storage
+        deleteLocalPhraseSet(phraseSetId);
+
+        // Invalidate cache to force reload
+        invalidatePhraseCache();
+
+        // Refresh phrase sets and phrases
+        const updatedPhraseSets = await getAvailablePhraseSets();
+        setAvailablePhraseSets(updatedPhraseSets);
+
+        const allPhrases = await getCachedPhrases();
+        setAllPhrases(allPhrases);
+
+        // If we were viewing the deleted set, switch to "All Sets"
+        if (phraseSetFilter === phraseSetId) {
+          setPhraseSetFilter("all");
+        }
+
+        // Close delete confirmation
+        setDeleteConfirm({ show: false, phraseSetId: "", phraseSetName: "" });
+
+        // Show success message
+        setLastResult({
+          success: true,
+          message: "Phrase set deleted successfully!",
+        });
+      } catch (error) {
+        console.error("Error deleting phrase set:", error);
+        setLastResult({
+          success: false,
+          message: "Failed to delete phrase set. Please try again.",
+        });
+      }
+    },
+    [phraseSetFilter]
+  );
+
   // Listen for audio blob changes and auto-process when available
   useEffect(() => {
     if (appState === "processing" && audioBlob && audioBlob.size > 0) {
@@ -1046,8 +1152,8 @@ export default function PronunciationPracticeSimple() {
               Google Speech-to-Text
             </CardDescription>
           </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="space-y-3">
+          <CardContent className="space-y-6">
+            <div className="space-y-4">
               <div>
                 <input
                   type="file"
@@ -1129,12 +1235,25 @@ export default function PronunciationPracticeSimple() {
       </Card>
 
       {/* Main practice card */}
-      <Card className="p-4 md:p-8 shadow-xl border-0 space-y-4 md:space-y-6">
-        <div className="space-y-4">
+      <Card className="p-4 md:p-8 shadow-xl border-0 space-y-6 md:space-y-8">
+        <div className="space-y-6">
           <div className="w-full">
-            <div className="flex flex-row gap-2 w-full">
+            {/* Mobile Layout: Stacked */}
+            <div className="flex flex-col gap-2 md:hidden">
+              {/* Generate Phrases Button */}
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setShowPhraseGenerator(true)}
+                className="w-full flex items-center justify-center gap-2 bg-purple-50 hover:bg-purple-100 text-purple-700 border-purple-300 h-9"
+                title="Generate custom French phrases with AI for any topic you want to practice"
+              >
+                <Sparkles className="h-4 w-4" />
+                <span>Generate Phrases</span>
+              </Button>
+
               {/* Phrase Set Filter Menu */}
-              <div className="relative flex-1" data-phrase-set-menu>
+              <div className="relative w-full" data-phrase-set-menu>
                 <Button
                   variant="outline"
                   size="sm"
@@ -1180,28 +1299,58 @@ export default function PronunciationPracticeSimple() {
                       </button>
 
                       {/* Available phrase sets */}
-                      {availablePhraseSets.map((phraseSet) => (
-                        <button
-                          key={phraseSet}
-                          onClick={() => {
-                            setPhraseSetFilter(phraseSet);
-                            setShowPhraseSetMenu(false);
-                          }}
-                          className={`w-full text-left px-4 py-2 text-sm hover:bg-gray-100 flex items-center justify-between ${
-                            phraseSetFilter === phraseSet
-                              ? "bg-[#10B981]/10 text-[#10B981]"
-                              : "text-gray-700"
-                          }`}
-                        >
-                          <span>
-                            {phraseSet.charAt(0).toUpperCase() +
-                              phraseSet.slice(1).replace("-", " ")}
-                          </span>
-                          <span className="text-xs text-gray-500">
-                            {getPhraseSetCount(phraseSet)}
-                          </span>
-                        </button>
-                      ))}
+                      {availablePhraseSets.map((phraseSet) => {
+                        const isGenerated = phraseSet.startsWith("generated-");
+                        const phraseSetInfo = isGenerated
+                          ? getLocalPhraseSetInfo(phraseSet)
+                          : null;
+                        const displayName =
+                          phraseSetInfo?.name ||
+                          phraseSet.charAt(0).toUpperCase() +
+                            phraseSet.slice(1).replace("-", " ");
+
+                        return (
+                          <div
+                            key={phraseSet}
+                            className={`flex items-center justify-between px-4 py-2 text-sm hover:bg-gray-100 ${
+                              phraseSetFilter === phraseSet
+                                ? "bg-[#10B981]/10 text-[#10B981]"
+                                : "text-gray-700"
+                            }`}
+                          >
+                            <button
+                              onClick={() => {
+                                setPhraseSetFilter(phraseSet);
+                                setShowPhraseSetMenu(false);
+                              }}
+                              className="flex-1 text-left flex items-center justify-between"
+                            >
+                              <span>{displayName}</span>
+                              <span className="text-xs text-gray-500">
+                                {getPhraseSetCount(phraseSet)}
+                              </span>
+                            </button>
+
+                            {isGenerated && (
+                              <button
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  setDeleteConfirm({
+                                    show: true,
+                                    phraseSetId: phraseSet,
+                                    phraseSetName: displayName,
+                                  });
+                                  setShowPhraseSetMenu(false);
+                                }}
+                                className="ml-2 p-1 hover:bg-red-100 rounded text-red-500 hover:text-red-700"
+                                title={`Delete "${displayName}"`}
+                              >
+                                <Trash2 className="h-3 w-3" />
+                              </button>
+                            )}
+                          </div>
+                        );
+                      })}
                     </div>
                   </div>
                 )}
@@ -1271,9 +1420,191 @@ export default function PronunciationPracticeSimple() {
                 )}
               </div>
             </div>
+
+            {/* Desktop Layout: Horizontal */}
+            <div className="hidden md:flex flex-row gap-2 w-full">
+              {/* Generate Phrases Button */}
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setShowPhraseGenerator(true)}
+                className="w-10 h-9 flex items-center justify-center bg-purple-50 hover:bg-purple-100 text-purple-700 border-purple-300"
+                title="Generate custom French phrases with AI for any topic you want to practice"
+              >
+                <Sparkles className="h-4 w-4" />
+              </Button>
+
+              {/* Phrase Set Filter Menu */}
+              <div className="relative flex-1" data-phrase-set-menu>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setShowPhraseSetMenu(!showPhraseSetMenu)}
+                  className="w-full flex items-center justify-center gap-2 bg-white/90 hover:bg-white text-foreground border-[#10B981]/30 h-9"
+                  disabled={isLoadingPhraseSets}
+                >
+                  {isLoadingPhraseSets ? (
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                  ) : (
+                    <Filter className="h-4 w-4" />
+                  )}
+                  <span>
+                    {isLoadingPhraseSets
+                      ? "Loading sets..."
+                      : phraseSetFilter === "all"
+                      ? "All Sets"
+                      : phraseSetFilter.charAt(0).toUpperCase() +
+                        phraseSetFilter.slice(1).replace("-", " ")}
+                  </span>
+                  <ChevronDown className="h-4 w-4" />
+                </Button>
+
+                {showPhraseSetMenu && (
+                  <div className="absolute left-0 right-0 top-full mt-1 bg-white rounded-lg shadow-lg border border-gray-200 z-50 max-h-64 overflow-y-auto">
+                    <div className="py-1">
+                      {/* All Sets option */}
+                      <button
+                        onClick={() => {
+                          setPhraseSetFilter("all");
+                          setShowPhraseSetMenu(false);
+                        }}
+                        className={`w-full text-left px-4 py-2 text-sm hover:bg-gray-100 flex items-center justify-between ${
+                          phraseSetFilter === "all"
+                            ? "bg-[#10B981]/10 text-[#10B981]"
+                            : "text-gray-700"
+                        }`}
+                      >
+                        <span>All Sets</span>
+                        <span className="text-xs text-gray-500">
+                          {getPhraseSetCount("all")}
+                        </span>
+                      </button>
+
+                      {/* Available phrase sets */}
+                      {availablePhraseSets.map((phraseSet) => {
+                        const isGenerated = phraseSet.startsWith("generated-");
+                        const phraseSetInfo = isGenerated
+                          ? getLocalPhraseSetInfo(phraseSet)
+                          : null;
+                        const displayName =
+                          phraseSetInfo?.name ||
+                          phraseSet.charAt(0).toUpperCase() +
+                            phraseSet.slice(1).replace("-", " ");
+
+                        return (
+                          <div
+                            key={phraseSet}
+                            className={`flex items-center justify-between px-4 py-2 text-sm hover:bg-gray-100 ${
+                              phraseSetFilter === phraseSet
+                                ? "bg-[#10B981]/10 text-[#10B981]"
+                                : "text-gray-700"
+                            }`}
+                          >
+                            <button
+                              onClick={() => {
+                                setPhraseSetFilter(phraseSet);
+                                setShowPhraseSetMenu(false);
+                              }}
+                              className="flex-1 text-left flex items-center justify-between"
+                            >
+                              <span>{displayName}</span>
+                              <span className="text-xs text-gray-500">
+                                {getPhraseSetCount(phraseSet)}
+                              </span>
+                            </button>
+
+                            {isGenerated && (
+                              <button
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  setDeleteConfirm({
+                                    show: true,
+                                    phraseSetId: phraseSet,
+                                    phraseSetName: displayName,
+                                  });
+                                  setShowPhraseSetMenu(false);
+                                }}
+                                className="ml-2 p-1 hover:bg-red-100 rounded text-red-500 hover:text-red-700"
+                                title={`Delete "${displayName}"`}
+                              >
+                                <Trash2 className="h-3 w-3" />
+                              </button>
+                            )}
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              {/* Difficulty Filter Menu */}
+              <div className="relative flex-1" data-difficulty-menu>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setShowDifficultyMenu(!showDifficultyMenu)}
+                  className="w-full flex items-center justify-center gap-2 bg-white/90 hover:bg-white text-foreground border-[#5BA3E8]/30 h-9"
+                >
+                  <Filter className="h-4 w-4" />
+                  <span>
+                    {difficultyFilter === "all"
+                      ? "All Levels"
+                      : difficultyFilter.charAt(0).toUpperCase() +
+                        difficultyFilter.slice(1)}
+                  </span>
+                  <ChevronDown className="h-4 w-4" />
+                </Button>
+
+                {showDifficultyMenu && (
+                  <div className="absolute left-0 right-0 top-full mt-1 bg-white rounded-lg shadow-lg border border-gray-200 z-50">
+                    <div className="py-1">
+                      {[
+                        {
+                          value: "all",
+                          label: "All Levels",
+                          count: totalPhraseCount,
+                        },
+                        { value: "beginner", label: "Beginner", count: 0 },
+                        {
+                          value: "intermediate",
+                          label: "Intermediate",
+                          count: 0,
+                        },
+                        { value: "advanced", label: "Advanced", count: 0 },
+                      ].map((option) => (
+                        <button
+                          key={option.value}
+                          onClick={() => {
+                            setDifficultyFilter(
+                              option.value as
+                                | "all"
+                                | "beginner"
+                                | "intermediate"
+                                | "advanced"
+                            );
+                            setShowDifficultyMenu(false);
+                          }}
+                          className={`w-full text-left px-4 py-2 text-sm hover:bg-gray-100 flex items-center justify-between ${
+                            difficultyFilter === option.value
+                              ? "bg-[#5BA3E8]/10 text-[#5BA3E8]"
+                              : "text-gray-700"
+                          }`}
+                        >
+                          <span>{option.label}</span>
+                          <span className="text-xs text-gray-500">
+                            {getDifficultyCount(option.value)}
+                          </span>
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </div>
+            </div>
           </div>
 
-          <div className="space-y-3">
+          <div className="space-y-4">
             {/* Phrase display with audio and translation controls */}
             <div className="p-4 md:p-6 bg-[#5BA3E8]/10 rounded-xl border-2 border-[#5BA3E8]/30">
               {currentPhrase ? (
@@ -1546,6 +1877,65 @@ export default function PronunciationPracticeSimple() {
         Repeat the phrase successfully {requiredReps} times to move to the next
         one
       </p>
+
+      {/* Phrase Generator Modal */}
+      {showPhraseGenerator && (
+        <PhraseGenerator
+          onPhrasesGenerated={handlePhrasesGenerated}
+          onClose={() => setShowPhraseGenerator(false)}
+        />
+      )}
+
+      {/* Delete Confirmation Modal */}
+      {deleteConfirm.show && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+          <Card className="w-full max-w-md">
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2 text-red-600">
+                <Trash2 className="h-5 w-5" />
+                Delete Phrase Set
+              </CardTitle>
+              <CardDescription>
+                This action cannot be undone. The phrase set and all its phrases
+                will be permanently removed.
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="p-3 bg-red-50 border border-red-200 rounded-md">
+                <p className="text-sm font-medium text-red-800">
+                  Delete: &quot;{deleteConfirm.phraseSetName}&quot;
+                </p>
+              </div>
+
+              <div className="flex gap-3">
+                <Button
+                  onClick={() =>
+                    handleDeletePhraseSet(deleteConfirm.phraseSetId)
+                  }
+                  variant="destructive"
+                  className="flex-1"
+                >
+                  <Trash2 className="mr-2 h-4 w-4" />
+                  Delete
+                </Button>
+                <Button
+                  variant="outline"
+                  onClick={() =>
+                    setDeleteConfirm({
+                      show: false,
+                      phraseSetId: "",
+                      phraseSetName: "",
+                    })
+                  }
+                  className="flex-1"
+                >
+                  Cancel
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+      )}
     </div>
   );
 }

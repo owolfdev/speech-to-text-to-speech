@@ -208,9 +208,16 @@ export async function getAvailablePhraseSets(): Promise<string[]> {
     throw new Error("Failed to fetch phrase sets");
   }
 
-  // Extract unique phrase sets
-  const phraseSets = [...new Set(data?.map((item) => item.phrase_set) || [])];
-  return phraseSets.sort();
+  // Extract unique phrase sets from database
+  const dbPhraseSets = [...new Set(data?.map((item) => item.phrase_set) || [])];
+
+  // Add local phrase sets
+  const { getAllLocalPhraseSets } = await import("./local-phrases");
+  const localPhraseSets = getAllLocalPhraseSets();
+
+  // Combine and sort
+  const allPhraseSets = [...new Set([...dbPhraseSets, ...localPhraseSets])];
+  return allPhraseSets.sort();
 }
 
 // Utility function to convert new format to legacy format for backward compatibility
@@ -236,9 +243,20 @@ export async function getCachedPhrases(): Promise<FrenchPhrase[]> {
     return cachedPhrases;
   }
 
-  cachedPhrases = await getAllPhrases();
+  const dbPhrases = await getAllPhrases();
+  // Import dynamically to avoid SSR issues
+  const { getLocalPhrases } = await import("./local-phrases");
+  const localPhrases = getLocalPhrases();
+
+  cachedPhrases = [...dbPhrases, ...localPhrases];
   cacheTimestamp = now;
   return cachedPhrases;
+}
+
+// Function to invalidate the cache (useful when local phrases are added)
+export function invalidatePhraseCache(): void {
+  cachedPhrases = null;
+  cacheTimestamp = 0;
 }
 
 export async function getCachedRandomPhrase(
