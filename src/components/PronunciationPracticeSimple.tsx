@@ -1271,8 +1271,18 @@ export default function PronunciationPracticeSimple() {
                       ? "Loading sets..."
                       : phraseSetFilter === "all"
                       ? "All Sets"
-                      : phraseSetFilter.charAt(0).toUpperCase() +
-                        phraseSetFilter.slice(1).replace("-", " ")}
+                      : (() => {
+                          const isGenerated =
+                            phraseSetFilter.startsWith("generated-");
+                          const phraseSetInfo = isGenerated
+                            ? getLocalPhraseSetInfo(phraseSetFilter)
+                            : null;
+                          return (
+                            phraseSetInfo?.name ||
+                            phraseSetFilter.charAt(0).toUpperCase() +
+                              phraseSetFilter.slice(1).replace("-", " ")
+                          );
+                        })()}
                   </span>
                   <ChevronDown className="h-4 w-4" />
                 </Button>
@@ -1453,8 +1463,18 @@ export default function PronunciationPracticeSimple() {
                       ? "Loading sets..."
                       : phraseSetFilter === "all"
                       ? "All Sets"
-                      : phraseSetFilter.charAt(0).toUpperCase() +
-                        phraseSetFilter.slice(1).replace("-", " ")}
+                      : (() => {
+                          const isGenerated =
+                            phraseSetFilter.startsWith("generated-");
+                          const phraseSetInfo = isGenerated
+                            ? getLocalPhraseSetInfo(phraseSetFilter)
+                            : null;
+                          return (
+                            phraseSetInfo?.name ||
+                            phraseSetFilter.charAt(0).toUpperCase() +
+                              phraseSetFilter.slice(1).replace("-", " ")
+                          );
+                        })()}
                   </span>
                   <ChevronDown className="h-4 w-4" />
                 </Button>
