@@ -1108,28 +1108,7 @@ export default function PronunciationPracticeSimple() {
   const buttonState = getButtonState();
 
   return (
-    <div className="max-w-2xl mx-auto space-y-4 md:space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-700">
-      {/* Header with branding */}
-      <div className="flex items-center justify-center gap-3">
-        <Image
-          src="/app-icon.png"
-          alt="Répéter"
-          width={48}
-          height={48}
-          className="rounded-xl"
-        />
-        <h1 className="text-4xl md:text-5xl font-bold text-white">Répéter</h1>
-        {/* <Button
-          variant="ghost"
-          size="sm"
-          onClick={() => setShowTestingMode(!showTestingMode)}
-          className="ml-auto text-white/80 hover:text-white hover:bg-white/10"
-          title="Toggle Testing Mode"
-        >
-          <TestTube className="w-4 h-4" />
-        </Button> */}
-      </div>
-
+    <div className="max-w-2xl mx-auto space-y-3 md:space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-700">
       {/* Testing Mode */}
       {showTestingMode && (
         <Card className="border-2 border-blue-500 bg-blue-50/10">
@@ -1208,28 +1187,44 @@ export default function PronunciationPracticeSimple() {
         </Card>
       )}
 
-      {/* Stats card */}
-      <Card className="p-4 md:p-6 shadow-xl border-0">
-        <div className="flex items-center justify-around gap-2 md:gap-4">
-          <div className="text-center">
-            <p className="text-2xl md:text-3xl font-bold text-[#5BA3E8]">
-              {score}
-            </p>
-            <p className="text-xs md:text-sm text-muted-foreground">Score</p>
-          </div>
-          <div className="h-10 md:h-12 w-px bg-border" />
-          <div className="text-center">
-            <p className="text-2xl md:text-3xl font-bold text-foreground">
-              {attempts}
-            </p>
-            <p className="text-xs md:text-sm text-muted-foreground">Attempts</p>
-          </div>
-          <div className="h-10 md:h-12 w-px bg-border" />
-          <div className="text-center">
-            <p className="text-2xl md:text-3xl font-bold text-foreground">
-              {attempts > 0 ? Math.round((score / attempts) * 100) : 0}%
-            </p>
-            <p className="text-xs md:text-sm text-muted-foreground">Accuracy</p>
+      {/* Stats card with logo - compact on mobile */}
+      <Card className="p-3 md:p-6 shadow-xl border-0">
+        <div className="flex items-center gap-3 md:gap-4">
+          {/* Logo */}
+          <Image
+            src="/app-icon.png"
+            alt="Répéter"
+            width={32}
+            height={32}
+            className="rounded-lg md:rounded-xl md:w-12 md:h-12 flex-shrink-0"
+          />
+
+          {/* Stats */}
+          <div className="flex items-center justify-around flex-1 gap-1 md:gap-4">
+            <div className="text-center">
+              <p className="text-xl md:text-3xl font-bold text-[#5BA3E8]">
+                {score}
+              </p>
+              <p className="text-xs md:text-sm text-muted-foreground">Score</p>
+            </div>
+            <div className="h-8 md:h-12 w-px bg-border" />
+            <div className="text-center">
+              <p className="text-xl md:text-3xl font-bold text-foreground">
+                {attempts}
+              </p>
+              <p className="text-xs md:text-sm text-muted-foreground">
+                Attempts
+              </p>
+            </div>
+            <div className="h-8 md:h-12 w-px bg-border" />
+            <div className="text-center">
+              <p className="text-xl md:text-3xl font-bold text-foreground">
+                {attempts > 0 ? Math.round((score / attempts) * 100) : 0}%
+              </p>
+              <p className="text-xs md:text-sm text-muted-foreground">
+                Accuracy
+              </p>
+            </div>
           </div>
         </div>
       </Card>
@@ -1649,6 +1644,7 @@ export default function PronunciationPracticeSimple() {
                         {currentPhraseIndex} of {totalPhraseCount}
                       </span>
                       <Badge
+                        variant="outline"
                         className={getDifficultyColor(currentPhrase.difficulty)}
                       >
                         {currentPhrase.difficulty}
@@ -1892,11 +1888,14 @@ export default function PronunciationPracticeSimple() {
           )}
       </Card>
 
-      {/* Footer instruction */}
-      <p className="text-center text-xs md:text-sm text-white/80 px-4">
-        Repeat the phrase successfully {requiredReps} times to move to the next
-        one
-      </p>
+      {/* Footer with branding and instruction */}
+      <div className="text-center space-y-2 px-4 pt-6">
+        <h1 className="text-lg md:text-2xl font-bold text-white">Répéter</h1>
+        <p className="text-xs md:text-sm text-white/80">
+          Repeat the phrase successfully {requiredReps} times to move to the
+          next one
+        </p>
+      </div>
 
       {/* Phrase Generator Modal */}
       {showPhraseGenerator && (
