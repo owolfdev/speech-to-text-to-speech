@@ -20,7 +20,7 @@ export function LogoutButton() {
       variant="outline"
       className="bg-white/10 border-white/20 text-white hover:bg-white/20"
     >
-      Déconnexion
+      Sign out
     </Button>
   );
 }

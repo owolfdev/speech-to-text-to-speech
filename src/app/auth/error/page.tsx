@@ -14,26 +14,25 @@ export default function AuthErrorPage() {
       <Card className="w-full max-w-md mx-auto">
         <CardHeader className="text-center">
           <CardTitle className="text-2xl font-bold text-red-600">
-            Erreur d&apos;authentification
+            Authentication Error
           </CardTitle>
           <CardDescription>
-            Une erreur s&apos;est produite lors de la confirmation de votre
-            email
+            An error occurred while confirming your email
           </CardDescription>
         </CardHeader>
         <CardContent className="text-center space-y-4">
           <p className="text-sm text-gray-600">
-            Le lien de confirmation est peut-être expiré ou invalide.
+            The confirmation link may be expired or invalid.
           </p>
           <div className="space-y-2">
             <Link href="/auth/sign-up">
               <Button className="w-full bg-[#5BA3E8] hover:bg-[#4A90C7]">
-                Réessayer l&apos;inscription
+                Try signing up again
               </Button>
             </Link>
             <Link href="/auth/login">
               <Button variant="outline" className="w-full">
-                Retour à la connexion
+                Back to sign in
               </Button>
             </Link>
           </div>

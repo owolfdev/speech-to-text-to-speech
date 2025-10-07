@@ -1001,7 +1001,7 @@ export default function PronunciationPracticeSimple() {
     return (
       <div className="max-w-2xl mx-auto space-y-4 md:space-y-6">
         {/* Header with animated app icon */}
-        <div className="flex items-center justify-center gap-3">
+        {/* <div className="flex items-center justify-center gap-3">
           <div className="relative">
             <Image
               src="/app-icon.png"
@@ -1015,7 +1015,7 @@ export default function PronunciationPracticeSimple() {
           <h1 className="text-4xl md:text-5xl font-bold text-white animate-pulse">
             Répéter
           </h1>
-        </div>
+        </div> */}
 
         {/* Skeleton cards that match the actual layout */}
         <div className="space-y-4 md:space-y-6">
@@ -1187,18 +1187,9 @@ export default function PronunciationPracticeSimple() {
         </Card>
       )}
 
-      {/* Stats card with logo - compact on mobile */}
+      {/* Stats card - compact on mobile */}
       <Card className="p-3 md:p-6 shadow-xl border-0">
         <div className="flex items-center gap-3 md:gap-4">
-          {/* Logo */}
-          <Image
-            src="/app-icon.png"
-            alt="Répéter"
-            width={32}
-            height={32}
-            className="rounded-lg md:rounded-xl md:w-12 md:h-12 flex-shrink-0"
-          />
-
           {/* Stats */}
           <div className="flex items-center justify-around flex-1 gap-1 md:gap-4">
             <div className="text-center">

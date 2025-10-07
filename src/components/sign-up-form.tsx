@@ -30,13 +30,13 @@ export function SignUpForm() {
     setError(null);
 
     if (password !== confirmPassword) {
-      setError("Les mots de passe ne correspondent pas");
+      setError("Passwords do not match");
       setLoading(false);
       return;
     }
 
     if (password.length < 6) {
-      setError("Le mot de passe doit contenir au moins 6 caractères");
+      setError("Password must be at least 6 characters long");
       setLoading(false);
       return;
     }
@@ -65,21 +65,21 @@ export function SignUpForm() {
       <Card className="w-full max-w-md mx-auto">
         <CardHeader className="text-center">
           <CardTitle className="text-2xl font-bold text-[#5BA3E8]">
-            Vérifiez votre email
+            Check your email
           </CardTitle>
           <CardDescription>
-            Nous avons envoyé un lien de confirmation à {email}
+            We&apos;ve sent a confirmation link to {email}
           </CardDescription>
         </CardHeader>
         <CardContent className="text-center">
           <p className="text-sm text-gray-600 mb-4">
-            Cliquez sur le lien dans l&apos;email pour confirmer votre compte.
+            Click the link in the email to confirm your account.
           </p>
           <Button
             onClick={() => router.push("/auth/login")}
             className="w-full bg-[#5BA3E8] hover:bg-[#4A90C7]"
           >
-            Retour à la connexion
+            Back to sign in
           </Button>
         </CardContent>
       </Card>
@@ -90,10 +90,10 @@ export function SignUpForm() {
     <Card className="w-full max-w-md mx-auto">
       <CardHeader className="text-center">
         <CardTitle className="text-2xl font-bold text-[#5BA3E8]">
-          Inscription
+          Sign Up
         </CardTitle>
         <CardDescription>
-          Créez un compte pour commencer votre pratique de prononciation
+          Create an account to start your French pronunciation practice
         </CardDescription>
       </CardHeader>
       <CardContent>
@@ -106,11 +106,11 @@ export function SignUpForm() {
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               required
-              placeholder="votre@email.com"
+              placeholder="your@email.com"
             />
           </div>
           <div className="space-y-2">
-            <Label htmlFor="password">Mot de passe</Label>
+            <Label htmlFor="password">Password</Label>
             <Input
               id="password"
               type="password"
@@ -122,7 +122,7 @@ export function SignUpForm() {
             />
           </div>
           <div className="space-y-2">
-            <Label htmlFor="confirmPassword">Confirmer le mot de passe</Label>
+            <Label htmlFor="confirmPassword">Confirm password</Label>
             <Input
               id="confirmPassword"
               type="password"
@@ -142,13 +142,13 @@ export function SignUpForm() {
             className="w-full bg-[#5BA3E8] hover:bg-[#4A90C7]"
             disabled={loading}
           >
-            {loading ? "Création du compte..." : "S&apos;inscrire"}
+            {loading ? "Creating account..." : "Sign up"}
           </Button>
         </form>
         <div className="mt-4 text-center text-sm">
-          <span className="text-gray-600">Déjà un compte ? </span>
+          <span className="text-gray-600">Already have an account? </span>
           <Link href="/auth/login" className="text-[#5BA3E8] hover:underline">
-            Se connecter
+            Sign in
           </Link>
         </div>
       </CardContent>

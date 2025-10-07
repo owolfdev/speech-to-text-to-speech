@@ -48,10 +48,10 @@ export function LoginForm() {
     <Card className="w-full max-w-md mx-auto">
       <CardHeader className="text-center">
         <CardTitle className="text-2xl font-bold text-[#5BA3E8]">
-          Connexion
+          Sign In
         </CardTitle>
         <CardDescription>
-          Connectez-vous pour accéder à votre pratique de prononciation
+          Sign in to access your French pronunciation practice
         </CardDescription>
       </CardHeader>
       <CardContent>
@@ -64,11 +64,11 @@ export function LoginForm() {
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               required
-              placeholder="votre@email.com"
+              placeholder="your@email.com"
             />
           </div>
           <div className="space-y-2">
-            <Label htmlFor="password">Mot de passe</Label>
+            <Label htmlFor="password">Password</Label>
             <Input
               id="password"
               type="password"
@@ -88,13 +88,13 @@ export function LoginForm() {
             className="w-full bg-[#5BA3E8] hover:bg-[#4A90C7]"
             disabled={loading}
           >
-            {loading ? "Connexion..." : "Se connecter"}
+            {loading ? "Signing in..." : "Sign In"}
           </Button>
         </form>
         <div className="mt-4 text-center text-sm">
-          <span className="text-gray-600">Pas encore de compte ? </span>
+          <span className="text-gray-600">Don&apos;t have an account? </span>
           <Link href="/auth/sign-up" className="text-[#5BA3E8] hover:underline">
-            S&apos;inscrire
+            Sign up
           </Link>
         </div>
         <div className="mt-2 text-center text-sm">
@@ -102,7 +102,7 @@ export function LoginForm() {
             href="/auth/forgot-password"
             className="text-[#5BA3E8] hover:underline"
           >
-            Mot de passe oublié ?
+            Forgot your password?
           </Link>
         </div>
       </CardContent>
