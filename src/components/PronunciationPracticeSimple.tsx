@@ -28,7 +28,9 @@ import {
   X,
   Filter,
   ChevronDown,
+  ChevronUp,
   Loader2,
+  Settings,
   Sparkles,
   Trash2,
 } from "lucide-react";
@@ -118,6 +120,9 @@ export default function PronunciationPracticeSimple() {
   const [recordButtonPressed, setRecordButtonPressed] = useState(false);
   const [backButtonPressed, setBackButtonPressed] = useState(false);
   const [nextButtonPressed, setNextButtonPressed] = useState(false);
+
+  // Mobile filters visibility
+  const [showMobileFilters, setShowMobileFilters] = useState(false);
 
   // Ref to track previous phrase for filter changes
   const previousPhraseRef = useRef<FrenchPhrase | null>(null);
@@ -1108,7 +1113,7 @@ export default function PronunciationPracticeSimple() {
   const buttonState = getButtonState();
 
   return (
-    <div className="max-w-2xl mx-auto space-y-3 md:space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-700">
+    <div className="max-w-2xl mx-auto space-y-2 md:space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-700">
       {/* Testing Mode */}
       {showTestingMode && (
         <Card className="border-2 border-blue-500 bg-blue-50/10">
@@ -1188,8 +1193,8 @@ export default function PronunciationPracticeSimple() {
       )}
 
       {/* Stats card - compact on mobile */}
-      <Card className="p-3 md:p-6 shadow-xl border-0">
-        <div className="flex items-center gap-3 md:gap-4">
+      <Card className="p-2 md:p-6 shadow-xl border-0">
+        <div className="flex items-center gap-2 md:gap-4">
           {/* Stats */}
           <div className="flex items-center justify-around flex-1 gap-1 md:gap-4">
             <div className="text-center">
@@ -1221,200 +1226,222 @@ export default function PronunciationPracticeSimple() {
       </Card>
 
       {/* Main practice card */}
-      <Card className="p-4 md:p-8 shadow-xl border-0 space-y-4 md:space-y-6">
+      <Card className="p-3 md:p-8 shadow-xl border-0 space-y-3 md:space-y-6">
         <div className="space-y-4">
           <div className="w-full">
-            {/* Mobile Layout: Stacked */}
+            {/* Mobile Layout: Collapsible Filters */}
             <div className="flex flex-col gap-2 md:hidden">
-              {/* Generate Phrases Button */}
+              {/* Mobile Filters Toggle Button */}
               <Button
                 variant="outline"
                 size="sm"
-                onClick={() => setShowPhraseGenerator(true)}
-                className="w-full flex items-center justify-center gap-2 bg-purple-50 hover:bg-purple-100 text-purple-700 border-purple-300 h-9"
-                title="Generate custom French phrases with AI for any topic you want to practice"
+                onClick={() => setShowMobileFilters(!showMobileFilters)}
+                className="w-full flex items-center justify-center gap-2 bg-blue-50 hover:bg-blue-100 text-blue-700 border-blue-300 h-9"
               >
-                <Sparkles className="h-4 w-4" />
-                <span>Generate Phrases</span>
+                <Settings className="h-4 w-4" />
+                <span>Filters & Options</span>
+                {showMobileFilters ? (
+                  <ChevronUp className="h-4 w-4" />
+                ) : (
+                  <ChevronDown className="h-4 w-4" />
+                )}
               </Button>
 
-              {/* Phrase Set Filter Menu */}
-              <div className="relative w-full" data-phrase-set-menu>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => setShowPhraseSetMenu(!showPhraseSetMenu)}
-                  className="w-full flex items-center justify-center gap-2 bg-white/90 hover:bg-white text-foreground border-[#10B981]/30"
-                  disabled={isLoadingPhraseSets}
-                >
-                  {isLoadingPhraseSets ? (
-                    <Loader2 className="h-4 w-4 animate-spin" />
-                  ) : (
-                    <Filter className="h-4 w-4" />
-                  )}
-                  <span>
-                    {isLoadingPhraseSets
-                      ? "Loading sets..."
-                      : phraseSetFilter === "all"
-                      ? "All Sets"
-                      : (() => {
-                          const isGenerated =
-                            phraseSetFilter.startsWith("generated-");
-                          const phraseSetInfo = isGenerated
-                            ? getLocalPhraseSetInfo(phraseSetFilter)
-                            : null;
-                          return (
-                            phraseSetInfo?.name ||
-                            phraseSetFilter.charAt(0).toUpperCase() +
-                              phraseSetFilter.slice(1).replace("-", " ")
-                          );
-                        })()}
-                  </span>
-                  <ChevronDown className="h-4 w-4" />
-                </Button>
+              {/* Collapsible Filters Panel */}
+              {showMobileFilters && (
+                <div className="space-y-2 p-3 bg-gray-50 rounded-lg border border-gray-200">
+                  {/* Generate Phrases Button */}
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setShowPhraseGenerator(true)}
+                    className="w-full flex items-center justify-center gap-2 bg-purple-50 hover:bg-purple-100 text-purple-700 border-purple-300 h-9"
+                    title="Generate custom French phrases with AI for any topic you want to practice"
+                  >
+                    <Sparkles className="h-4 w-4" />
+                    <span>Generate Phrases</span>
+                  </Button>
 
-                {showPhraseSetMenu && (
-                  <div className="absolute left-0 right-0 top-full mt-1 bg-white rounded-lg shadow-lg border border-gray-200 z-50 max-h-64 overflow-y-auto">
-                    <div className="py-1">
-                      {/* All Sets option */}
-                      <button
-                        onClick={() => {
-                          setPhraseSetFilter("all");
-                          setShowPhraseSetMenu(false);
-                        }}
-                        className={`w-full text-left px-4 py-2 text-sm hover:bg-gray-100 flex items-center justify-between ${
-                          phraseSetFilter === "all"
-                            ? "bg-[#10B981]/10 text-[#10B981]"
-                            : "text-gray-700"
-                        }`}
-                      >
-                        <span>All Sets</span>
-                        <span className="text-xs text-gray-500">
-                          {getPhraseSetCount("all")}
-                        </span>
-                      </button>
+                  {/* Phrase Set Filter Menu */}
+                  <div className="relative w-full" data-phrase-set-menu>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => setShowPhraseSetMenu(!showPhraseSetMenu)}
+                      className="w-full flex items-center justify-center gap-2 bg-white/90 hover:bg-white text-foreground border-[#10B981]/30"
+                      disabled={isLoadingPhraseSets}
+                    >
+                      {isLoadingPhraseSets ? (
+                        <Loader2 className="h-4 w-4 animate-spin" />
+                      ) : (
+                        <Filter className="h-4 w-4" />
+                      )}
+                      <span>
+                        {isLoadingPhraseSets
+                          ? "Loading sets..."
+                          : phraseSetFilter === "all"
+                          ? "All Sets"
+                          : (() => {
+                              const isGenerated =
+                                phraseSetFilter.startsWith("generated-");
+                              const phraseSetInfo = isGenerated
+                                ? getLocalPhraseSetInfo(phraseSetFilter)
+                                : null;
+                              return (
+                                phraseSetInfo?.name ||
+                                phraseSetFilter.charAt(0).toUpperCase() +
+                                  phraseSetFilter.slice(1).replace("-", " ")
+                              );
+                            })()}
+                      </span>
+                      <ChevronDown className="h-4 w-4" />
+                    </Button>
 
-                      {/* Available phrase sets */}
-                      {availablePhraseSets.map((phraseSet) => {
-                        const isGenerated = phraseSet.startsWith("generated-");
-                        const phraseSetInfo = isGenerated
-                          ? getLocalPhraseSetInfo(phraseSet)
-                          : null;
-                        const displayName =
-                          phraseSetInfo?.name ||
-                          phraseSet.charAt(0).toUpperCase() +
-                            phraseSet.slice(1).replace("-", " ");
-
-                        return (
-                          <div
-                            key={phraseSet}
-                            className={`flex items-center justify-between px-4 py-2 text-sm hover:bg-gray-100 ${
-                              phraseSetFilter === phraseSet
+                    {showPhraseSetMenu && (
+                      <div className="absolute left-0 right-0 top-full mt-1 bg-white rounded-lg shadow-lg border border-gray-200 z-50 max-h-64 overflow-y-auto">
+                        <div className="py-1">
+                          {/* All Sets option */}
+                          <button
+                            onClick={() => {
+                              setPhraseSetFilter("all");
+                              setShowPhraseSetMenu(false);
+                            }}
+                            className={`w-full text-left px-4 py-2 text-sm hover:bg-gray-100 flex items-center justify-between ${
+                              phraseSetFilter === "all"
                                 ? "bg-[#10B981]/10 text-[#10B981]"
                                 : "text-gray-700"
                             }`}
                           >
+                            <span>All Sets</span>
+                            <span className="text-xs text-gray-500">
+                              {getPhraseSetCount("all")}
+                            </span>
+                          </button>
+
+                          {/* Available phrase sets */}
+                          {availablePhraseSets.map((phraseSet) => {
+                            const isGenerated =
+                              phraseSet.startsWith("generated-");
+                            const phraseSetInfo = isGenerated
+                              ? getLocalPhraseSetInfo(phraseSet)
+                              : null;
+                            const displayName =
+                              phraseSetInfo?.name ||
+                              phraseSet.charAt(0).toUpperCase() +
+                                phraseSet.slice(1).replace("-", " ");
+
+                            return (
+                              <div
+                                key={phraseSet}
+                                className={`flex items-center justify-between px-4 py-2 text-sm hover:bg-gray-100 ${
+                                  phraseSetFilter === phraseSet
+                                    ? "bg-[#10B981]/10 text-[#10B981]"
+                                    : "text-gray-700"
+                                }`}
+                              >
+                                <button
+                                  onClick={() => {
+                                    setPhraseSetFilter(phraseSet);
+                                    setShowPhraseSetMenu(false);
+                                  }}
+                                  className="flex-1 text-left flex items-center justify-between"
+                                >
+                                  <span>{displayName}</span>
+                                  <span className="text-xs text-gray-500">
+                                    {getPhraseSetCount(phraseSet)}
+                                  </span>
+                                </button>
+
+                                {isGenerated && (
+                                  <button
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      setDeleteConfirm({
+                                        show: true,
+                                        phraseSetId: phraseSet,
+                                        phraseSetName: displayName,
+                                      });
+                                      setShowPhraseSetMenu(false);
+                                    }}
+                                    className="ml-2 p-1 hover:bg-red-100 rounded text-red-500 hover:text-red-700"
+                                    title={`Delete "${displayName}"`}
+                                  >
+                                    <Trash2 className="h-3 w-3" />
+                                  </button>
+                                )}
+                              </div>
+                            );
+                          })}
+                        </div>
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Difficulty Filter Menu */}
+                  <div className="relative flex-1" data-difficulty-menu>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => setShowDifficultyMenu(!showDifficultyMenu)}
+                      className="w-full flex items-center justify-center gap-2 bg-white/90 hover:bg-white text-foreground border-[#5BA3E8]/30"
+                    >
+                      <Filter className="h-4 w-4" />
+                      <span>
+                        {difficultyFilter === "all"
+                          ? "All Levels"
+                          : difficultyFilter.charAt(0).toUpperCase() +
+                            difficultyFilter.slice(1)}
+                      </span>
+                      <ChevronDown className="h-4 w-4" />
+                    </Button>
+
+                    {showDifficultyMenu && (
+                      <div className="absolute left-0 right-0 top-full mt-1 bg-white rounded-lg shadow-lg border border-gray-200 z-50">
+                        <div className="py-1">
+                          {[
+                            {
+                              value: "all",
+                              label: "All Levels",
+                              count: totalPhraseCount,
+                            },
+                            { value: "beginner", label: "Beginner", count: 0 },
+                            {
+                              value: "intermediate",
+                              label: "Intermediate",
+                              count: 0,
+                            },
+                            { value: "advanced", label: "Advanced", count: 0 },
+                          ].map((option) => (
                             <button
+                              key={option.value}
                               onClick={() => {
-                                setPhraseSetFilter(phraseSet);
-                                setShowPhraseSetMenu(false);
+                                setDifficultyFilter(
+                                  option.value as
+                                    | "all"
+                                    | "beginner"
+                                    | "intermediate"
+                                    | "advanced"
+                                );
+                                setShowDifficultyMenu(false);
                               }}
-                              className="flex-1 text-left flex items-center justify-between"
+                              className={`w-full text-left px-4 py-2 text-sm hover:bg-gray-100 flex items-center justify-between ${
+                                difficultyFilter === option.value
+                                  ? "bg-[#5BA3E8]/10 text-[#5BA3E8]"
+                                  : "text-gray-700"
+                              }`}
                             >
-                              <span>{displayName}</span>
+                              <span>{option.label}</span>
                               <span className="text-xs text-gray-500">
-                                {getPhraseSetCount(phraseSet)}
+                                {getDifficultyCount(option.value)}
                               </span>
                             </button>
-
-                            {isGenerated && (
-                              <button
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  setDeleteConfirm({
-                                    show: true,
-                                    phraseSetId: phraseSet,
-                                    phraseSetName: displayName,
-                                  });
-                                  setShowPhraseSetMenu(false);
-                                }}
-                                className="ml-2 p-1 hover:bg-red-100 rounded text-red-500 hover:text-red-700"
-                                title={`Delete "${displayName}"`}
-                              >
-                                <Trash2 className="h-3 w-3" />
-                              </button>
-                            )}
-                          </div>
-                        );
-                      })}
-                    </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
                   </div>
-                )}
-              </div>
-
-              {/* Difficulty Filter Menu */}
-              <div className="relative flex-1" data-difficulty-menu>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => setShowDifficultyMenu(!showDifficultyMenu)}
-                  className="w-full flex items-center justify-center gap-2 bg-white/90 hover:bg-white text-foreground border-[#5BA3E8]/30"
-                >
-                  <Filter className="h-4 w-4" />
-                  <span>
-                    {difficultyFilter === "all"
-                      ? "All Levels"
-                      : difficultyFilter.charAt(0).toUpperCase() +
-                        difficultyFilter.slice(1)}
-                  </span>
-                  <ChevronDown className="h-4 w-4" />
-                </Button>
-
-                {showDifficultyMenu && (
-                  <div className="absolute left-0 right-0 top-full mt-1 bg-white rounded-lg shadow-lg border border-gray-200 z-50">
-                    <div className="py-1">
-                      {[
-                        {
-                          value: "all",
-                          label: "All Levels",
-                          count: totalPhraseCount,
-                        },
-                        { value: "beginner", label: "Beginner", count: 0 },
-                        {
-                          value: "intermediate",
-                          label: "Intermediate",
-                          count: 0,
-                        },
-                        { value: "advanced", label: "Advanced", count: 0 },
-                      ].map((option) => (
-                        <button
-                          key={option.value}
-                          onClick={() => {
-                            setDifficultyFilter(
-                              option.value as
-                                | "all"
-                                | "beginner"
-                                | "intermediate"
-                                | "advanced"
-                            );
-                            setShowDifficultyMenu(false);
-                          }}
-                          className={`w-full text-left px-4 py-2 text-sm hover:bg-gray-100 flex items-center justify-between ${
-                            difficultyFilter === option.value
-                              ? "bg-[#5BA3E8]/10 text-[#5BA3E8]"
-                              : "text-gray-700"
-                          }`}
-                        >
-                          <span>{option.label}</span>
-                          <span className="text-xs text-gray-500">
-                            {getDifficultyCount(option.value)}
-                          </span>
-                        </button>
-                      ))}
-                    </div>
-                  </div>
-                )}
-              </div>
+                </div>
+              )}
             </div>
 
             {/* Desktop Layout: Horizontal */}
