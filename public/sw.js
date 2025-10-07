@@ -2,6 +2,9 @@ const CACHE_NAME = "repetere-pwa-v2";
 const urlsToCache = [
   "/",
   "/protected",
+  "/auth/login",
+  "/auth/sign-up",
+  "/auth/error",
   "/manifest.json",
   "/app-icon.png",
   "/_next/static/css/",
@@ -19,11 +22,8 @@ self.addEventListener("install", (event) => {
 
 // Fetch event
 self.addEventListener("fetch", (event) => {
-  // Skip caching for auth-related requests
-  if (
-    event.request.url.includes("/auth/") ||
-    event.request.url.includes("/api/auth/")
-  ) {
+  // Skip caching for API auth requests but allow page caching
+  if (event.request.url.includes("/api/auth/")) {
     return;
   }
 
