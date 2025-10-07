@@ -50,37 +50,41 @@ export function PWAInstallPrompt() {
   if (!showInstallPrompt) return null;
 
   return (
-    <div className="fixed bottom-4 right-4 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-lg p-4 max-w-sm z-50">
-      <div className="flex items-center gap-3">
-        <div className="flex-shrink-0">
-          <Image
-            src="/app-icon.png"
-            alt="App Icon"
-            width={48}
-            height={48}
-            className="w-12 h-12 rounded-lg"
-          />
-        </div>
-        <div className="flex-1">
-          <h3 className="text-sm font-medium text-gray-900 dark:text-gray-100">
-            Install Répéter
-          </h3>
-          <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
-            Install this app on your device for quick access
-          </p>
-        </div>
-        <div className="flex gap-2">
-          <Button onClick={handleInstallClick} size="sm" className="text-xs">
-            Install
-          </Button>
-          <Button
-            onClick={() => setShowInstallPrompt(false)}
-            variant="outline"
-            size="sm"
-            className="text-xs"
-          >
-            Not now
-          </Button>
+    <div className="sticky bottom-0 bg-white/10 backdrop-blur-sm border-t border-white/20 z-50 mt-auto">
+      <div className="container mx-auto px-4 py-3">
+        <div className="flex items-center gap-3">
+          <div className="flex-shrink-0">
+            <Image
+              src="/app-icon.png"
+              alt="App Icon"
+              width={32}
+              height={32}
+              className="w-8 h-8 rounded-lg"
+            />
+          </div>
+          <div className="flex-1">
+            <h3 className="text-sm font-medium text-white">Install Répéter</h3>
+            <p className="text-xs text-white/80 mt-1">
+              Install this app on your device for quick access
+            </p>
+          </div>
+          <div className="flex gap-2">
+            <Button
+              onClick={handleInstallClick}
+              size="sm"
+              className="text-xs bg-white text-[#5BA3E8] hover:bg-white/90"
+            >
+              Install
+            </Button>
+            <Button
+              onClick={() => setShowInstallPrompt(false)}
+              variant="outline"
+              size="sm"
+              className="text-xs border-white/30 text-white hover:bg-white/10"
+            >
+              Not now
+            </Button>
+          </div>
         </div>
       </div>
     </div>

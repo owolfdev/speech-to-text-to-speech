@@ -1,6 +1,7 @@
 import { createClient } from "@/lib/supabase/server";
 import { redirect } from "next/navigation";
 import { UserDropdown } from "@/components/user-dropdown";
+import { NavigationFooter } from "@/components/NavigationFooter";
 import Image from "next/image";
 
 export default async function ProtectedLayout({
@@ -19,23 +20,26 @@ export default async function ProtectedLayout({
   }
 
   return (
-    <div className="min-h-screen bg-[#5BA3E8]">
-      <header className="bg-white/10 backdrop-blur-sm border-b border-white/20">
-        <div className="container mx-auto px-4 py-2 md:py-4 flex justify-between items-center">
+    <div className="min-h-screen bg-[#5BA3E8] flex flex-col">
+      <header>
+        <div className="container mx-auto px-4 pt-4 pb-2 md:py-4 flex justify-between items-center">
           <div className="flex items-center gap-2 md:gap-3">
             <Image
               src="/app-icon.png"
               alt="Répéter Logo"
-              width={24}
-              height={24}
-              className="rounded-lg md:w-8 md:h-8"
+              width={28}
+              height={28}
+              className="rounded-lg md:w-9 md:h-9"
             />
-            <h1 className="text-lg md:text-xl font-bold text-white">Répéter</h1>
+            <h1 className="text-xl md:text-2xl font-bold text-white">
+              Répéter
+            </h1>
           </div>
           <UserDropdown user={user} />
         </div>
       </header>
-      <main>{children}</main>
+      <main className="flex-1">{children}</main>
+      <NavigationFooter />
     </div>
   );
 }

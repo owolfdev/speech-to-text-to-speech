@@ -1909,13 +1909,6 @@ export default function PronunciationPracticeSimple() {
       </Card>
 
       {/* Footer with branding and instruction */}
-      <div className="text-center space-y-2 px-4 pt-6">
-        <h1 className="text-lg md:text-2xl font-bold text-white">Répéter</h1>
-        <p className="text-xs md:text-sm text-white/80">
-          Repeat the phrase successfully {requiredReps} times to move to the
-          next one
-        </p>
-      </div>
 
       {/* Phrase Generator Modal */}
       {showPhraseGenerator && (

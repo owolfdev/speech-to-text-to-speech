@@ -46,7 +46,7 @@ export function UserDropdown({ user }: UserDropdownProps) {
         onClick={() => setIsOpen(!isOpen)}
         variant="ghost"
         size="sm"
-        className="bg-white/10 hover:bg-white/20 text-white border border-white/20 rounded-full p-2 h-10 w-10"
+        className="text-white hover:bg-white/10 p-1 h-8 w-8"
       >
         <UserIcon className="h-5 w-5" />
       </Button>
