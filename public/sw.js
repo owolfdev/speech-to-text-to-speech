@@ -1,6 +1,7 @@
-const CACHE_NAME = "repetere-pwa-v1";
+const CACHE_NAME = "repetere-pwa-v2";
 const urlsToCache = [
   "/",
+  "/protected",
   "/manifest.json",
   "/app-icon.png",
   "/_next/static/css/",
@@ -18,6 +19,14 @@ self.addEventListener("install", (event) => {
 
 // Fetch event
 self.addEventListener("fetch", (event) => {
+  // Skip caching for auth-related requests
+  if (
+    event.request.url.includes("/auth/") ||
+    event.request.url.includes("/api/auth/")
+  ) {
+    return;
+  }
+
   event.respondWith(
     caches.match(event.request).then((response) => {
       // Return cached version or fetch from network

@@ -5,10 +5,12 @@ import { User } from "@supabase/supabase-js";
 import { createClient } from "@/lib/supabase/client";
 import { UserDropdown } from "@/components/user-dropdown";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 
 export function AuthHeader() {
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
+  const router = useRouter();
 
   useEffect(() => {
     const supabase = createClient();
@@ -30,10 +32,30 @@ export function AuthHeader() {
     } = supabase.auth.onAuthStateChange((event, session) => {
       setUser(session?.user ?? null);
       setLoading(false);
+
+      // Redirect to protected route when user logs in and we're on home page
+      if (
+        session?.user &&
+        window.location.pathname === "/" &&
+        !window.location.search.includes("source=pwa")
+      ) {
+        router.push("/protected");
+      }
     });
 
     return () => subscription.unsubscribe();
-  }, []);
+  }, [router]);
+
+  // Handle initial redirect for authenticated users
+  useEffect(() => {
+    if (
+      user &&
+      window.location.pathname === "/" &&
+      !window.location.search.includes("source=pwa")
+    ) {
+      router.push("/protected");
+    }
+  }, [user, router]);
 
   return (
     <header>
