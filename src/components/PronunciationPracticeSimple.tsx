@@ -1230,8 +1230,8 @@ export default function PronunciationPracticeSimple() {
       </Card>
 
       {/* Main practice card */}
-      <Card className="p-4 md:p-8 shadow-xl border-0 space-y-6 md:space-y-8">
-        <div className="space-y-6">
+      <Card className="p-4 md:p-8 shadow-xl border-0 space-y-4 md:space-y-6">
+        <div className="space-y-4">
           <div className="w-full">
             {/* Mobile Layout: Stacked */}
             <div className="flex flex-col gap-2 md:hidden">
@@ -1619,7 +1619,7 @@ export default function PronunciationPracticeSimple() {
             </div>
           </div>
 
-          <div className="space-y-4">
+          <div className="space-y-3">
             {/* Phrase display with audio and translation controls */}
             <div className="p-4 md:p-6 bg-[#5BA3E8]/10 rounded-xl border-2 border-[#5BA3E8]/30">
               {currentPhrase ? (
@@ -1732,7 +1732,7 @@ export default function PronunciationPracticeSimple() {
 
           {/* Progress section with emotional progression - only show when there's a current phrase */}
           {currentPhrase && (
-            <div className="space-y-3">
+            <div className="space-y-2">
               <div className="flex gap-1.5 md:gap-2">
                 {Array.from({ length: requiredReps }).map((_, i) => (
                   <div
@@ -1782,7 +1782,7 @@ export default function PronunciationPracticeSimple() {
 
         {/* Control buttons - only show when there's a current phrase */}
         {currentPhrase && (
-          <div className="flex items-center justify-center gap-3 md:gap-4">
+          <div className="flex items-center justify-center gap-3 md:gap-4 -mt-2">
             <Button
               size="lg"
               onClick={buttonState.onClick}
@@ -1830,14 +1830,16 @@ export default function PronunciationPracticeSimple() {
           (isAudioRecording ||
             appState === "processing" ||
             isRequestingPermission) && (
-            <RecordingStatus
-              isRecording={isAudioRecording}
-              isProcessing={appState === "processing"}
-              recordingTime={recordingTime}
-              maxRecordingTime={maxRecordingTime}
-              isNearLimit={isNearLimit}
-              isRequestingPermission={isRequestingPermission}
-            />
+            <div className="-mt-2">
+              <RecordingStatus
+                isRecording={isAudioRecording}
+                isProcessing={appState === "processing"}
+                recordingTime={recordingTime}
+                maxRecordingTime={maxRecordingTime}
+                isNearLimit={isNearLimit}
+                isRequestingPermission={isRequestingPermission}
+              />
+            </div>
           )}
 
         {/* SUCCESS/FAILURE MESSAGES - Show when not recording/processing and there's a current phrase */}
@@ -1846,7 +1848,7 @@ export default function PronunciationPracticeSimple() {
           appState !== "processing" &&
           (lastResult || showCelebration) && (
             <div
-              className={`p-4 md:p-6 rounded-xl border-2 ${
+              className={`p-4 md:p-6 rounded-xl border-2 -mt-2 ${
                 showCelebration
                   ? "bg-violet-50 dark:bg-violet-900/20 border-violet-200 dark:border-violet-800 animate-in fade-in slide-in-from-bottom-4"
                   : lastResult?.success
