@@ -42,8 +42,8 @@ export default function PhraseGenerator({
     setProgress(0);
     setTimeRemaining(0);
 
-    // Estimate time based on phrase count (roughly 2-3 seconds per phrase)
-    const estimatedSeconds = Math.max(10, count * 2.5);
+    // Estimate time based on phrase count (roughly 0.5-1 second per phrase with GPT-3.5 Turbo)
+    const estimatedSeconds = Math.max(5, count * 0.7);
     setTimeRemaining(estimatedSeconds);
 
     // Progress simulation
