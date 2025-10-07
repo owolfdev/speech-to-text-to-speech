@@ -1,4 +1,4 @@
-const CACHE_NAME = "repetere-pwa-v2";
+const CACHE_NAME = "repetere-pwa-v3";
 const urlsToCache = [
   "/",
   "/protected",
@@ -18,6 +18,8 @@ self.addEventListener("install", (event) => {
       return cache.addAll(urlsToCache);
     })
   );
+  // Skip waiting to activate the new service worker immediately
+  self.skipWaiting();
 });
 
 // Fetch event
@@ -38,14 +40,20 @@ self.addEventListener("fetch", (event) => {
 // Activate event
 self.addEventListener("activate", (event) => {
   event.waitUntil(
-    caches.keys().then((cacheNames) => {
-      return Promise.all(
-        cacheNames.map((cacheName) => {
-          if (cacheName !== CACHE_NAME) {
-            return caches.delete(cacheName);
-          }
-        })
-      );
-    })
+    caches
+      .keys()
+      .then((cacheNames) => {
+        return Promise.all(
+          cacheNames.map((cacheName) => {
+            if (cacheName !== CACHE_NAME) {
+              return caches.delete(cacheName);
+            }
+          })
+        );
+      })
+      .then(() => {
+        // Take control of all clients immediately
+        return self.clients.claim();
+      })
   );
 });

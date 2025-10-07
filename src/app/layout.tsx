@@ -53,9 +53,14 @@ export default function RootLayout({
         <meta name="apple-mobile-web-app-capable" content="yes" />
         <meta name="apple-mobile-web-app-status-bar-style" content="default" />
         <meta name="apple-mobile-web-app-title" content="Répéter" />
+        <meta name="apple-touch-fullscreen" content="yes" />
         <link rel="apple-touch-icon" href="/app-icon.png" />
+        <link rel="apple-touch-startup-image" href="/app-icon.png" />
         <meta name="mobile-web-app-capable" content="yes" />
         <meta name="application-name" content="Répéter" />
+        <meta name="msapplication-TileColor" content="#3b82f6" />
+        <meta name="msapplication-tap-highlight" content="no" />
+        <meta name="format-detection" content="telephone=no" />
       </head>
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}
@@ -69,10 +74,19 @@ export default function RootLayout({
                   navigator.serviceWorker.register('/sw.js')
                     .then(function(registration) {
                       console.log('SW registered: ', registration);
+                      // Force update to latest service worker
+                      registration.update();
                     })
                     .catch(function(registrationError) {
                       console.log('SW registration failed: ', registrationError);
                     });
+                });
+                
+                // Listen for service worker updates
+                navigator.serviceWorker.addEventListener('message', function(event) {
+                  if (event.data && event.data.type === 'SKIP_WAITING') {
+                    window.location.reload();
+                  }
                 });
               }
             `,

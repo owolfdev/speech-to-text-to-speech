@@ -1,6 +1,7 @@
 import { AuthHeader } from "@/components/AuthHeader";
 import { AppFooter } from "@/components/AppFooter";
 import PronunciationPracticeSimple from "@/components/PronunciationPracticeSimple";
+import { PWAReinstallPrompt } from "@/components/PWAReinstallPrompt";
 
 export default function Home() {
   return (
@@ -12,6 +13,7 @@ export default function Home() {
         </div>
       </main>
       <AppFooter />
+      <PWAReinstallPrompt />
     </div>
   );
 }
