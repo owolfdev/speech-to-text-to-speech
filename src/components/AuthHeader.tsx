@@ -38,7 +38,10 @@ export function AuthHeader() {
   return (
     <header>
       <div className="container mx-auto px-4 pt-4 pb-2 md:py-4 flex justify-between items-center">
-        <div className="flex items-center gap-2 md:gap-3">
+        <Link
+          href="/"
+          className="flex items-center gap-2 md:gap-3 hover:opacity-80 transition-opacity"
+        >
           <img
             src="/app-icon.png"
             alt="Répéter Logo"
@@ -47,7 +50,7 @@ export function AuthHeader() {
             className="rounded-lg md:w-9 md:h-9"
           />
           <h1 className="text-xl md:text-2xl font-bold text-white">Répéter</h1>
-        </div>
+        </Link>
         <div className="flex items-center gap-3">
           {loading ? (
             <div className="w-8 h-8 bg-white/20 rounded animate-pulse" />

@@ -10,7 +10,7 @@ import Link from "next/link";
 
 export default function AuthErrorPage() {
   return (
-    <div className="min-h-screen bg-[#5BA3E8] flex items-center justify-center p-4">
+    <div className="flex items-center justify-center min-h-full p-4">
       <Card className="w-full max-w-md mx-auto">
         <CardHeader className="text-center">
           <CardTitle className="text-2xl font-bold text-red-600">
