@@ -37,25 +37,32 @@ export async function updateSession(request: NextRequest) {
     data: { user },
   } = await supabase.auth.getUser();
 
-  if (
-    !user &&
-    !request.nextUrl.pathname.startsWith("/auth") &&
-    !request.nextUrl.pathname.startsWith("/_next") &&
-    !request.nextUrl.pathname.startsWith("/favicon") &&
-    !request.nextUrl.pathname.startsWith("/manifest") &&
-    !request.nextUrl.pathname.startsWith("/sw.js") &&
-    !request.nextUrl.pathname.startsWith("/app-icon")
-  ) {
-    // no user, potentially respond by redirecting the user to the login page
+  // Define public routes that don't require authentication
+  const publicRoutes = [
+    "/",
+    "/docs",
+    "/blog",
+    "/contact",
+    "/auth",
+    "/_next",
+    "/favicon",
+    "/manifest",
+    "/sw.js",
+    "/app-icon",
+  ];
+
+  const isPublicRoute = publicRoutes.some((route) =>
+    request.nextUrl.pathname.startsWith(route)
+  );
+
+  if (!user && !isPublicRoute) {
+    // no user, redirect to login page
     const url = request.nextUrl.clone();
     url.pathname = "/auth/login";
 
-    // If the request came from PWA, add PWA parameter to redirect URL
-    if (
-      request.nextUrl.searchParams.has("source") &&
-      request.nextUrl.searchParams.get("source") === "pwa"
-    ) {
-      url.searchParams.set("pwa", "true");
+    // Preserve the source=pwa parameter if it exists
+    if (request.nextUrl.searchParams.get("source") === "pwa") {
+      url.searchParams.set("source", "pwa");
     }
 
     return NextResponse.redirect(url);

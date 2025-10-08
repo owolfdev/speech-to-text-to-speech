@@ -73,7 +73,14 @@ export function AuthHeader() {
             height={28}
             className="rounded-lg md:w-9 md:h-9"
           />
-          <h1 className="text-xl md:text-2xl font-bold text-white">Répéter</h1>
+          <div className="flex items-center gap-2">
+            <h1 className="text-xl md:text-2xl font-bold text-white">
+              Répéter
+            </h1>
+            <span className="text-xs text-white/60 font-mono bg-white/10 px-2 py-0.5 rounded">
+              v-102
+            </span>
+          </div>
         </PWALink>
         <div className="flex items-center gap-3">
           {loading ? (
