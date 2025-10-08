@@ -78,7 +78,7 @@ export function AuthHeader() {
               Répéter
             </h1>
             <span className="text-xs text-white/60 font-mono bg-white/10 px-2 py-0.5 rounded">
-              v-107-MINIMAL-MANIFEST
+              v-108-SIMPLE-SW
             </span>
           </div>
         </Link>
