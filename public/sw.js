@@ -1,9 +1,5 @@
-const CACHE_NAME = "repetere-pwa-v3";
+const CACHE_NAME = "repetere-pwa-v4";
 const urlsToCache = [
-  "/",
-  "/auth/login",
-  "/auth/sign-up",
-  "/auth/error",
   "/manifest.json",
   "/app-icon.png",
   "/_next/static/css/",
@@ -23,17 +19,54 @@ self.addEventListener("install", (event) => {
 
 // Fetch event
 self.addEventListener("fetch", (event) => {
-  // Skip caching for API auth requests but allow page caching
-  if (event.request.url.includes("/api/auth/")) {
+  if (event.request.method !== "GET") {
     return;
   }
 
-  event.respondWith(
-    caches.match(event.request).then((response) => {
-      // Return cached version or fetch from network
-      return response || fetch(event.request);
-    })
-  );
+  // Network-first for navigations so auth state stays current
+  if (event.request.mode === "navigate") {
+    event.respondWith(
+      fetch(event.request)
+        .then((networkResponse) => {
+          if (networkResponse && networkResponse.status === 200) {
+            const responseClone = networkResponse.clone();
+            caches.open(CACHE_NAME).then((cache) => {
+              cache.put(event.request, responseClone);
+            });
+          }
+          return networkResponse;
+        })
+        .catch(async () => {
+          const cachedResponse = await caches.match(event.request);
+          if (cachedResponse) {
+            return cachedResponse;
+          }
+          return Response.error();
+        })
+    );
+    return;
+  }
+
+  const requestUrl = new URL(event.request.url);
+
+  // Stale-while-revalidate for same-origin static assets
+  if (requestUrl.origin === self.location.origin) {
+    event.respondWith(
+      caches.open(CACHE_NAME).then(async (cache) => {
+        const cachedResponse = await cache.match(event.request);
+        const fetchPromise = fetch(event.request)
+          .then((networkResponse) => {
+            if (networkResponse && networkResponse.status === 200) {
+              cache.put(event.request, networkResponse.clone());
+            }
+            return networkResponse;
+          })
+          .catch(() => cachedResponse);
+
+        return cachedResponse || fetchPromise;
+      })
+    );
+  }
 });
 
 // Activate event

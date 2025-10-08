@@ -1,7 +1,6 @@
 import { AuthHeader } from "@/components/AuthHeader";
 import { AppFooter } from "@/components/AppFooter";
 import { SignUpForm } from "@/components/sign-up-form";
-import { PWAAuthNotice } from "@/components/PWAAuthNotice";
 
 export default function SignUpPage() {
   return (
@@ -9,7 +8,6 @@ export default function SignUpPage() {
       <AuthHeader />
       <main className="flex-1 flex items-center justify-center p-4">
         <div className="w-full max-w-md">
-          <PWAAuthNotice />
           <SignUpForm />
         </div>
       </main>
