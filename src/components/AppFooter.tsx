@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import Link from "next/link";
+import { PWALink } from "./PWALink";
 import { Button } from "./ui/button";
 import Image from "next/image";
 
@@ -97,24 +97,24 @@ export function AppFooter() {
       {/* Navigation Links */}
       <div className="container mx-auto px-4 py-4">
         <nav className="flex justify-center gap-6 md:gap-8">
-          <Link
+          <PWALink
             href="/docs"
             className="text-white/80 hover:text-white text-sm md:text-base transition-colors"
           >
             Docs
-          </Link>
-          <Link
+          </PWALink>
+          <PWALink
             href="/blog"
             className="text-white/80 hover:text-white text-sm md:text-base transition-colors"
           >
             Blog
-          </Link>
-          <Link
+          </PWALink>
+          <PWALink
             href="/contact"
             className="text-white/80 hover:text-white text-sm md:text-base transition-colors"
           >
             Contact
-          </Link>
+          </PWALink>
         </nav>
       </div>
     </footer>
