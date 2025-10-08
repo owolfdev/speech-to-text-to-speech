@@ -78,7 +78,7 @@ export function AuthHeader() {
               Répéter
             </h1>
             <span className="text-xs text-white/60 font-mono bg-white/10 px-2 py-0.5 rounded">
-              v-104-NO-MW
+              v-105-FIXED
             </span>
           </div>
         </Link>
@@ -90,28 +90,14 @@ export function AuthHeader() {
           ) : (
             <div className="flex gap-2">
               <button
-                onClick={() => {
-                  if (isPWA()) {
-                    // Redirect to external browser for auth
-                    window.location.href = "/auth/login";
-                  } else {
-                    router.push("/auth/login");
-                  }
-                }}
+                onClick={() => router.push("/auth/login")}
                 className="text-white/80 hover:text-white text-sm md:text-base transition-colors"
               >
                 Login
               </button>
               <span className="text-white/40">|</span>
               <button
-                onClick={() => {
-                  if (isPWA()) {
-                    // Redirect to external browser for auth
-                    window.location.href = "/auth/sign-up";
-                  } else {
-                    router.push("/auth/sign-up");
-                  }
-                }}
+                onClick={() => router.push("/auth/sign-up")}
                 className="text-white/80 hover:text-white text-sm md:text-base transition-colors"
               >
                 Sign Up
