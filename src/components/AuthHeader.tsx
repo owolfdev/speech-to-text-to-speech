@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import { User } from "@supabase/supabase-js";
 import { createClient } from "@/lib/supabase/client";
 import { UserDropdown } from "@/components/user-dropdown";
-import { PWALink } from "@/components/PWALink";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import Image from "next/image";
 import { isPWA } from "@/lib/pwa-utils";
@@ -62,7 +62,7 @@ export function AuthHeader() {
   return (
     <header>
       <div className="container mx-auto px-4 pt-4 pb-2 md:py-4 flex justify-between items-center">
-        <PWALink
+        <Link
           href="/"
           className="flex items-center gap-2 md:gap-3 hover:opacity-80 transition-opacity"
         >
@@ -78,10 +78,10 @@ export function AuthHeader() {
               Répéter
             </h1>
             <span className="text-xs text-white/60 font-mono bg-white/10 px-2 py-0.5 rounded">
-              v-102
+              v-103
             </span>
           </div>
-        </PWALink>
+        </Link>
         <div className="flex items-center gap-3">
           {loading ? (
             <div className="w-8 h-8 bg-white/20 rounded animate-pulse" />

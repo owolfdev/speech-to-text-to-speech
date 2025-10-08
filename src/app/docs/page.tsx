@@ -1,7 +1,7 @@
 import { AuthHeader } from "@/components/AuthHeader";
 import { AppFooter } from "@/components/AppFooter";
 import { getDocsByCategory } from "@/data/docs";
-import { PWALink } from "@/components/PWALink";
+import Link from "next/link";
 
 export default function DocsPage() {
   const docsByCategory = getDocsByCategory();
@@ -28,7 +28,7 @@ export default function DocsPage() {
                 </h2>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   {categoryDocs.map((doc) => (
-                    <PWALink
+                    <Link
                       key={doc.slug}
                       href={`/docs/${doc.slug}`}
                       className="bg-white rounded-lg shadow-lg p-6 hover:shadow-xl transition-shadow"
@@ -53,7 +53,7 @@ export default function DocsPage() {
                           />
                         </svg>
                       </div>
-                    </PWALink>
+                    </Link>
                   ))}
                 </div>
               </section>

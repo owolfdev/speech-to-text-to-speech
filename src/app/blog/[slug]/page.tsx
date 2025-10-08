@@ -2,7 +2,7 @@ import { AuthHeader } from "@/components/AuthHeader";
 import { AppFooter } from "@/components/AppFooter";
 import { getBlogPost, getAllBlogSlugs } from "@/data/blog-posts";
 import { notFound } from "next/navigation";
-import { PWALink } from "@/components/PWALink";
+import Link from "next/link";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 
@@ -32,7 +32,7 @@ export default async function BlogPostPage({
         <div className="container mx-auto px-4 py-8 md:py-12">
           <div className="max-w-4xl mx-auto">
             {/* Back to Blog Link */}
-            <PWALink
+            <Link
               href="/blog"
               className="inline-flex items-center text-white hover:text-gray-100 mb-6 transition-colors"
             >
@@ -50,7 +50,7 @@ export default async function BlogPostPage({
                 />
               </svg>
               Back to Blog
-            </PWALink>
+            </Link>
 
             {/* Blog Post Content */}
             <article className="bg-white rounded-lg shadow-lg p-6 md:p-10">

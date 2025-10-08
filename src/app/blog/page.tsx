@@ -1,7 +1,7 @@
 import { AuthHeader } from "@/components/AuthHeader";
 import { AppFooter } from "@/components/AppFooter";
 import { blogPosts } from "@/data/blog-posts";
-import { PWALink } from "@/components/PWALink";
+import Link from "next/link";
 
 export default function BlogPage() {
   return (
@@ -19,14 +19,14 @@ export default function BlogPage() {
                 key={post.slug}
                 className="bg-white rounded-lg shadow-lg p-6 md:p-8 mb-6"
               >
-                <PWALink href={`/blog/${post.slug}`}>
+                <Link href={`/blog/${post.slug}`}>
                   <h2 className="text-2xl font-semibold mb-2 hover:text-blue-600 transition-colors cursor-pointer">
                     {post.title}
                   </h2>
-                </PWALink>
+                </Link>
                 <p className="text-gray-600 text-sm mb-4">{post.date}</p>
                 <p className="mb-4">{post.excerpt}</p>
-                <PWALink
+                <Link
                   href={`/blog/${post.slug}`}
                   className="text-blue-500 hover:text-blue-600 font-medium inline-flex items-center transition-colors"
                 >
@@ -44,7 +44,7 @@ export default function BlogPage() {
                       d="M9 5l7 7-7 7"
                     />
                   </svg>
-                </PWALink>
+                </Link>
               </article>
             ))}
           </div>

@@ -2,7 +2,7 @@ import { AuthHeader } from "@/components/AuthHeader";
 import { AppFooter } from "@/components/AppFooter";
 import { getDoc, getAllDocSlugs, getDocsByCategory } from "@/data/docs";
 import { notFound } from "next/navigation";
-import { PWALink } from "@/components/PWALink";
+import Link from "next/link";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 
@@ -37,7 +37,7 @@ export default async function DocPage({
               {/* Sidebar Navigation */}
               <aside className="lg:col-span-1">
                 <div className="bg-white rounded-lg shadow-lg p-4 sticky top-4">
-                  <PWALink
+                  <Link
                     href="/docs"
                     className="inline-flex items-center text-blue-600 hover:text-blue-700 mb-4 text-sm font-medium transition-colors"
                   >
@@ -55,7 +55,7 @@ export default async function DocPage({
                       />
                     </svg>
                     All Docs
-                  </PWALink>
+                  </Link>
 
                   <nav className="space-y-4">
                     {Object.entries(docsByCategory).map(
@@ -67,7 +67,7 @@ export default async function DocPage({
                           <ul className="space-y-1">
                             {categoryDocs.map((categoryDoc) => (
                               <li key={categoryDoc.slug}>
-                                <PWALink
+                                <Link
                                   href={`/docs/${categoryDoc.slug}`}
                                   className={`block text-sm px-2 py-1 rounded transition-colors ${
                                     categoryDoc.slug === doc.slug
@@ -76,7 +76,7 @@ export default async function DocPage({
                                   }`}
                                 >
                                   {categoryDoc.title}
-                                </PWALink>
+                                </Link>
                               </li>
                             ))}
                           </ul>
