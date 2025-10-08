@@ -18,7 +18,7 @@ export default function RecordingStatus({
   isProcessing,
   recordingTime,
   maxRecordingTime = 30,
-  isNearLimit = false,
+  isNearLimit: _ = false,
   isRequestingPermission = false,
   className = "",
 }: RecordingStatusProps) {

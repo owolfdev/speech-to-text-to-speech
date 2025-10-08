@@ -34,7 +34,6 @@ import {
   Sparkles,
   Trash2,
 } from "lucide-react";
-import Image from "next/image";
 import { useAudioRecorder } from "@/hooks/useAudioRecorder";
 import {
   getCachedPhrases,
@@ -267,9 +266,7 @@ export default function PronunciationPracticeSimple() {
           const savedPhraseId = localStorage.getItem(
             "pronunciation-current-phrase-id"
           );
-          const savedPhraseIndex = localStorage.getItem(
-            "pronunciation-current-phrase-index"
-          );
+          localStorage.getItem("pronunciation-current-phrase-index");
 
           let phraseToRestore = null;
           let phraseIndex = 0;
@@ -384,24 +381,6 @@ export default function PronunciationPracticeSimple() {
     return phrases.filter((p) => p.difficulty === difficulty).length;
   };
 
-  // Get count for each category (respects current filters)
-  const getCategoryCount = (category: string) => {
-    let phrases = allPhrases;
-
-    // Apply current filters except category
-    if (difficultyFilter !== "all") {
-      phrases = phrases.filter((p) => p.difficulty === difficultyFilter);
-    }
-    if (phraseSetFilter !== "all") {
-      phrases = phrases.filter((p) => p.phrase_set === phraseSetFilter);
-    }
-
-    if (category === "all") {
-      return phrases.length;
-    }
-    return phrases.filter((p) => p.category === category).length;
-  };
-
   // Get count for each phrase set (respects current filters)
   const getPhraseSetCount = (phraseSet: string) => {
     let phrases = allPhrases;
@@ -418,27 +397,6 @@ export default function PronunciationPracticeSimple() {
       return phrases.length;
     }
     return phrases.filter((p) => p.phrase_set === phraseSet).length;
-  };
-
-  // Get unique categories from all phrases
-  const getUniqueCategories = () => {
-    const categories = allPhrases.reduce((acc, phrase) => {
-      if (!acc.find((cat) => cat.value === phrase.category)) {
-        acc.push({
-          value: phrase.category,
-          label:
-            phrase.category.charAt(0).toUpperCase() +
-            phrase.category.slice(1).replace("_", " "),
-          count: getCategoryCount(phrase.category),
-        });
-      }
-      return acc;
-    }, [] as { value: string; label: string; count: number }[]);
-
-    return [
-      { value: "all", label: "All Categories", count: allPhrases.length },
-      ...categories.sort((a, b) => a.label.localeCompare(b.label)),
-    ];
   };
 
   // Debug logging

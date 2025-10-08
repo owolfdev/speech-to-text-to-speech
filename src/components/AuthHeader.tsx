@@ -6,6 +6,7 @@ import { createClient } from "@/lib/supabase/client";
 import { UserDropdown } from "@/components/user-dropdown";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
+import Image from "next/image";
 
 export function AuthHeader() {
   const [user, setUser] = useState<User | null>(null);
@@ -64,7 +65,7 @@ export function AuthHeader() {
           href="/"
           className="flex items-center gap-2 md:gap-3 hover:opacity-80 transition-opacity"
         >
-          <img
+          <Image
             src="/app-icon.png"
             alt="Répéter Logo"
             width={28}
