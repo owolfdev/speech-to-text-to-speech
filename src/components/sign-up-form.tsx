@@ -14,6 +14,7 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import Link from "next/link";
+import { isPWA } from "@/lib/pwa-utils";
 
 export function SignUpForm() {
   const [email, setEmail] = useState("");
@@ -43,11 +44,16 @@ export function SignUpForm() {
 
     const supabase = createClient();
 
+    // Include PWA context in redirect URL
+    const redirectUrl = isPWA()
+      ? `${window.location.origin}/auth/confirm?pwa=true`
+      : `${window.location.origin}/auth/confirm`;
+
     const { error } = await supabase.auth.signUp({
       email,
       password,
       options: {
-        emailRedirectTo: `${window.location.origin}/auth/confirm`,
+        emailRedirectTo: redirectUrl,
       },
     });
 

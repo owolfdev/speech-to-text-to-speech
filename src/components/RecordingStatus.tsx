@@ -8,7 +8,6 @@ interface RecordingStatusProps {
   isProcessing: boolean;
   recordingTime: number;
   maxRecordingTime?: number;
-  isNearLimit?: boolean;
   isRequestingPermission?: boolean;
   className?: string;
 }
@@ -18,7 +17,6 @@ export default function RecordingStatus({
   isProcessing,
   recordingTime,
   maxRecordingTime = 30,
-  isNearLimit: _ = false,
   isRequestingPermission = false,
   className = "",
 }: RecordingStatusProps) {

@@ -4,8 +4,15 @@ import { NextRequest, NextResponse } from "next/server";
 export async function GET(request: NextRequest) {
   const { searchParams, origin } = new URL(request.url);
   const code = searchParams.get("code");
+  // Check if user was in PWA mode before auth
+  const wasPWA = searchParams.get("pwa") === "true";
   // if "next" is in param, use it as the redirect URL
-  const next = searchParams.get("next") ?? "/protected";
+  let next = searchParams.get("next") ?? "/protected";
+
+  // If user was in PWA mode, redirect back to PWA
+  if (wasPWA) {
+    next = "/?source=pwa";
+  }
 
   if (code) {
     const supabase = await createClient();

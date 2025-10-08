@@ -131,7 +131,6 @@ export default function PronunciationPracticeSimple() {
     isRecording: isAudioRecording,
     recordingTime,
     maxRecordingTime,
-    isNearLimit,
     isRequestingPermission,
     audioBlob,
     startRecording,
@@ -1812,7 +1811,6 @@ export default function PronunciationPracticeSimple() {
                 isProcessing={appState === "processing"}
                 recordingTime={recordingTime}
                 maxRecordingTime={maxRecordingTime}
-                isNearLimit={isNearLimit}
                 isRequestingPermission={isRequestingPermission}
               />
             </div>

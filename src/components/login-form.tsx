@@ -14,6 +14,7 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import Link from "next/link";
+import { isPWA } from "@/lib/pwa-utils";
 
 export function LoginForm() {
   const [email, setEmail] = useState("");
@@ -37,7 +38,12 @@ export function LoginForm() {
     if (error) {
       setError(error.message);
     } else {
-      router.push("/protected");
+      // If in PWA mode, redirect to PWA home instead of protected route
+      if (isPWA()) {
+        router.push("/?source=pwa");
+      } else {
+        router.push("/protected");
+      }
       router.refresh();
     }
 

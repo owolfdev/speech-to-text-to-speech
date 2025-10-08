@@ -7,6 +7,7 @@ import { UserDropdown } from "@/components/user-dropdown";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import Image from "next/image";
+import { isPWA } from "@/lib/pwa-utils";
 
 export function AuthHeader() {
   const [user, setUser] = useState<User | null>(null);
@@ -81,19 +82,33 @@ export function AuthHeader() {
             <UserDropdown user={user} />
           ) : (
             <div className="flex gap-2">
-              <Link
-                href="/auth/login"
+              <button
+                onClick={() => {
+                  if (isPWA()) {
+                    // Redirect to external browser for auth
+                    window.location.href = "/auth/login";
+                  } else {
+                    router.push("/auth/login");
+                  }
+                }}
                 className="text-white/80 hover:text-white text-sm md:text-base transition-colors"
               >
                 Login
-              </Link>
+              </button>
               <span className="text-white/40">|</span>
-              <Link
-                href="/auth/sign-up"
+              <button
+                onClick={() => {
+                  if (isPWA()) {
+                    // Redirect to external browser for auth
+                    window.location.href = "/auth/sign-up";
+                  } else {
+                    router.push("/auth/sign-up");
+                  }
+                }}
                 className="text-white/80 hover:text-white text-sm md:text-base transition-colors"
               >
                 Sign Up
-              </Link>
+              </button>
             </div>
           )}
         </div>
