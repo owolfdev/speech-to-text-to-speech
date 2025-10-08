@@ -53,7 +53,7 @@ export async function POST(request: NextRequest) {
       },
       audioConfig: {
         audioEncoding: "MP3" as const,
-        speakingRate: 0.9,
+        speakingRate: 0.7, // Slower for pronunciation practice
         pitch: 0.0,
       },
     };
