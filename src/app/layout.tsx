@@ -70,24 +70,14 @@ export default function RootLayout({
           dangerouslySetInnerHTML={{
             __html: `
               if ('serviceWorker' in navigator) {
-                window.addEventListener('load', function() {
-                  navigator.serviceWorker.register('/sw.js')
-                    .then(function(registration) {
-                      console.log('SW registered: ', registration);
-                      // Force update to latest service worker
-                      registration.update();
-                    })
-                    .catch(function(registrationError) {
-                      console.log('SW registration failed: ', registrationError);
-                    });
-                });
-                
-                // Listen for service worker updates
-                navigator.serviceWorker.addEventListener('message', function(event) {
-                  if (event.data && event.data.type === 'SKIP_WAITING') {
-                    window.location.reload();
-                  }
-                });
+                navigator.serviceWorker
+                  .register('/sw.js')
+                  .then(function(registration) {
+                    console.log('Service Worker registered with scope:', registration.scope);
+                  })
+                  .catch(function(error) {
+                    console.error('Service Worker registration failed:', error);
+                  });
               }
             `,
           }}
