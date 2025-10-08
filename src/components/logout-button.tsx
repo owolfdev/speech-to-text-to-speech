@@ -11,7 +11,7 @@ export function LogoutButton() {
     const supabase = createClient();
     await supabase.auth.signOut();
     router.push("/auth/login");
-    router.refresh();
+    // Don't use router.refresh() - it causes full page reload and breaks PWA
   };
 
   return (

@@ -38,13 +38,9 @@ export function LoginForm() {
     if (error) {
       setError(error.message);
     } else {
-      // If in PWA mode, redirect to PWA home instead of default home route
-      if (isPWA()) {
-        router.push("/?source=pwa");
-      } else {
-        router.push("/");
-      }
-      router.refresh();
+      // Navigate to home page
+      router.push("/");
+      // Don't use router.refresh() - it causes full page reload and breaks PWA
     }
 
     setLoading(false);
