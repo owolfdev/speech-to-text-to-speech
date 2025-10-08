@@ -1,7 +1,6 @@
 const CACHE_NAME = "repetere-pwa-v3";
 const urlsToCache = [
   "/",
-  "/protected",
   "/auth/login",
   "/auth/sign-up",
   "/auth/error",

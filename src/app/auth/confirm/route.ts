@@ -7,7 +7,7 @@ export async function GET(request: NextRequest) {
   // Check if user was in PWA mode before auth
   const wasPWA = searchParams.get("pwa") === "true";
   // if "next" is in param, use it as the redirect URL
-  let next = searchParams.get("next") ?? "/protected";
+  let next = searchParams.get("next") ?? "/";
 
   // If user was in PWA mode, redirect back to PWA
   if (wasPWA) {

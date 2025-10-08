@@ -35,13 +35,13 @@ export function AuthHeader() {
       setUser(session?.user ?? null);
       setLoading(false);
 
-      // Redirect to protected route when user logs in and we're on home page
+      // Redirect to home route when user logs in and we're on landing page
       if (
         session?.user &&
         window.location.pathname === "/" &&
         !window.location.search.includes("source=pwa")
       ) {
-        router.push("/protected");
+        router.push("/");
       }
     });
 
@@ -55,7 +55,7 @@ export function AuthHeader() {
       window.location.pathname === "/" &&
       !window.location.search.includes("source=pwa")
     ) {
-      router.push("/protected");
+      router.push("/");
     }
   }, [user, router]);
 
